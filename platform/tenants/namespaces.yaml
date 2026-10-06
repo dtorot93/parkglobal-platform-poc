@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-parking-core
+  labels:
+    parkglobal.io/team: parking-core
+    parkglobal.io/cost-center: CC-PARK-01
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-payments-core
+  labels:
+    parkglobal.io/team: payments-core
+    parkglobal.io/cost-center: CC-PAY-01

@@ -1,0 +1,21 @@
+# El app-of-apps aplica el ApplicationSet en la última ola (wave 0).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: claims-appset
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dtorot93/parkglobal-platform-poc.git
+    targetRevision: main
+    path: platform/argocd
+    directory:
+      include: claims-appset.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }

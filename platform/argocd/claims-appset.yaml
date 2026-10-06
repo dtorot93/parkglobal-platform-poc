@@ -1,0 +1,36 @@
+# Una Application por claim: claims/<team>/<name>/databaseclaim.yaml -> namespace team-<team>.
+# catalog-info.yaml vive en el mismo directorio pero es para Backstage, no para el clúster.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: claims
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/dtorot93/parkglobal-platform-poc.git
+        revision: main
+        directories:
+          - path: claims/*/*
+  template:
+    metadata:
+      name: 'claim-{{ index .path.segments 1 }}-{{ .path.basename }}'
+      labels:
+        parkglobal.io/golden-path: database
+        parkglobal.io/team: '{{ index .path.segments 1 }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/dtorot93/parkglobal-platform-poc.git
+        targetRevision: main
+        path: '{{ .path.path }}'
+        directory:
+          include: databaseclaim.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'team-{{ index .path.segments 1 }}'
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        retry: { limit: 5, backoff: { duration: 10s, factor: 2, maxDuration: 2m } }

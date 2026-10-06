@@ -1,0 +1,8 @@
+# Registro de centros de costo válidos (FinOps). Lo consume la política require-registered-cost-center.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-centers
+  namespace: kyverno
+data:
+  allowed: "CC-PARK-01,CC-PAY-01"
