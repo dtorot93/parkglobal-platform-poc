@@ -1,0 +1,67 @@
+# Platform API (contrato). Crossplane v2: XR namespaced, sin claims; el XR se llama DatabaseClaim.
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: databaseclaims.platform.parkglobal.io
+spec:
+  group: platform.parkglobal.io
+  names:
+    kind: DatabaseClaim
+    plural: databaseclaims
+    shortNames: [dbc]
+    categories: [parkglobal]
+  scope: Namespaced
+  defaultCompositionRef:
+    name: databaseclaim-cnpg
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - { name: SIZE, type: string, jsonPath: .spec.size }
+        - { name: ENV, type: string, jsonPath: .spec.environment }
+        - { name: ENDPOINT, type: string, jsonPath: .status.endpoint }
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [owner, engine, environment]
+              properties:
+                owner:
+                  type: object
+                  description: Equipo propietario y centro de costo (obligatorios, FinOps).
+                  required: [team, costCenter]
+                  properties:
+                    team:
+                      type: string
+                      description: Equipo propietario sin prefijo (p. ej. parking-core).
+                    costCenter:
+                      type: string
+                      pattern: '^CC-[A-Z]{2,5}-[0-9]{2}$'
+                engine:
+                  type: string
+                  description: Motor del catálogo cerrado. Roadmap (fase 2) incluye s3.
+                  enum: [postgresql]
+                size:
+                  type: string
+                  description: Perfil semántico, no tipo de instancia.
+                  enum: [small, medium]
+                  default: small
+                environment:
+                  type: string
+                  enum: [dev, staging]
+                access:
+                  type: object
+                  properties:
+                    readers:
+                      type: array
+                      description: Grupos con lectura del secreto de conexión.
+                      items: { type: string }
+            status:
+              type: object
+              properties:
+                endpoint: { type: string }
+                secretRef: { type: string }
+                ready: { type: boolean }

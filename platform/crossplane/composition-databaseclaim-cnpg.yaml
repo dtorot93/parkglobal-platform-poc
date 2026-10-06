@@ -1,0 +1,114 @@
+# Implementación local del contrato DatabaseClaim con CloudNativePG.
+# En AWS se sustituye por `databaseclaim-aurora` (provider-aws, Aurora + Secrets Manager); el contrato no cambia.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: databaseclaim-cnpg
+  labels:
+    platform.parkglobal.io/engine: postgresql
+    platform.parkglobal.io/provider: cnpg
+spec:
+  compositeTypeRef:
+    apiVersion: platform.parkglobal.io/v1alpha1
+    kind: DatabaseClaim
+  mode: Pipeline
+  pipeline:
+    - step: render
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource }}
+            {{- $name := $xr.metadata.name }}
+            {{- $ns := $xr.metadata.namespace }}
+            {{- /* Mapa de perfiles semánticos -> dimensionamiento concreto */}}
+            {{- $profiles := dict
+                  "small"  (dict "instances" 1 "storage" "1Gi" "cpu" "250m" "memory" "256Mi")
+                  "medium" (dict "instances" 2 "storage" "5Gi" "cpu" "500m" "memory" "512Mi") }}
+            {{- $p := index $profiles (default "small" $xr.spec.size) }}
+            {{- $labels := dict
+                  "parkglobal.io/team" $xr.spec.owner.team
+                  "parkglobal.io/cost-center" $xr.spec.owner.costCenter
+                  "parkglobal.io/environment" $xr.spec.environment }}
+            {{- $readers := dig "access" "readers" (list) $xr.spec }}
+            {{- $observed := default (dict) .observed.resources }}
+            {{- $ready := false }}
+            {{- with index $observed "cluster" }}
+              {{- range (dig "status" "conditions" (list) .resource) }}
+                {{- if and (eq .type "Ready") (eq .status "True") }}{{ $ready = true }}{{ end }}
+              {{- end }}
+            {{- end }}
+            ---
+            apiVersion: postgresql.cnpg.io/v1
+            kind: Cluster
+            metadata:
+              name: {{ $name }}
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: cluster
+              labels: {{ $labels | toJson }}
+            spec:
+              instances: {{ $p.instances }}
+              storage:
+                size: {{ $p.storage }}
+              resources:
+                requests:
+                  cpu: {{ $p.cpu }}
+                  memory: {{ $p.memory }}
+              inheritedMetadata:
+                labels: {{ $labels | toJson }}
+              bootstrap:
+                initdb:
+                  database: app
+                  owner: app
+            ---
+            apiVersion: rbac.authorization.k8s.io/v1
+            kind: Role
+            metadata:
+              name: {{ $name }}-secret-reader
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: secret-reader-role
+                gotemplating.fn.crossplane.io/ready: "True"
+              labels: {{ $labels | toJson }}
+            rules:
+              - apiGroups: [""]
+                resources: ["secrets"]
+                resourceNames: ["{{ $name }}-app"]
+                verbs: ["get"]
+            {{- if $readers }}
+            ---
+            apiVersion: rbac.authorization.k8s.io/v1
+            kind: RoleBinding
+            metadata:
+              name: {{ $name }}-secret-readers
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: secret-reader-binding
+                gotemplating.fn.crossplane.io/ready: "True"
+              labels: {{ $labels | toJson }}
+            roleRef:
+              apiGroup: rbac.authorization.k8s.io
+              kind: Role
+              name: {{ $name }}-secret-reader
+            subjects:
+            {{- range $readers }}
+              - apiGroup: rbac.authorization.k8s.io
+                kind: Group
+                name: {{ . }}
+            {{- end }}
+            {{- end }}
+            ---
+            apiVersion: platform.parkglobal.io/v1alpha1
+            kind: DatabaseClaim
+            status:
+              endpoint: {{ $name }}-rw.{{ $ns }}.svc
+              secretRef: {{ $name }}-app
+              ready: {{ $ready }}
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: function-auto-ready
