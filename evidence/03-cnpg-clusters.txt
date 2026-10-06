@@ -1,0 +1,3 @@
+$ kubectl --context kind-parkglobal-poc get cluster.postgresql.cnpg.io -A
+NAMESPACE           NAME     AGE   INSTANCES   READY   STATUS                     PRIMARY
+team-parking-core   e2e-db   20m   1           1       Cluster in healthy state   e2e-db-1

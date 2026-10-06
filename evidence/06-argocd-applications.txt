@@ -1,0 +1,11 @@
+$ kubectl --context kind-parkglobal-poc -n argocd get applications
+NAME                        SYNC STATUS   HEALTH STATUS
+claim-parking-core-e2e-db   Synced        Healthy
+claims-appset               Synced        Healthy
+cloudnative-pg              Synced        Healthy
+crossplane                  Synced        Healthy
+kyverno                     Synced        Healthy
+platform-crossplane         Synced        Healthy
+platform-policies           Synced        Healthy
+platform-tenants            Synced        Healthy
+root                        Synced        Healthy

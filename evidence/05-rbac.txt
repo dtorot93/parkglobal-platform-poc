@@ -1,0 +1,8 @@
+$ kubectl --context kind-parkglobal-poc -n team-parking-core get role,rolebinding -l parkglobal.io/team -o wide
+NAME                                                  CREATED AT
+role.rbac.authorization.k8s.io/e2e-db                 2026-10-06T03:45:22Z
+role.rbac.authorization.k8s.io/e2e-db-secret-reader   2026-10-06T03:45:22Z
+
+NAME                                                          ROLE                        AGE   USERS   GROUPS             SERVICEACCOUNTS
+rolebinding.rbac.authorization.k8s.io/e2e-db                  Role/e2e-db                 20m                              team-parking-core/e2e-db
+rolebinding.rbac.authorization.k8s.io/e2e-db-secret-readers   Role/e2e-db-secret-reader   20m           grp-parking-core   

@@ -1,0 +1,85 @@
+$ make teardown && make bootstrap && make platform   # inicio 2026-10-06T04:06:52Z
+./scripts/teardown.sh
+Deleting cluster "parkglobal-poc" ...
+Deleted nodes: ["parkglobal-poc-control-plane"]
+./scripts/bootstrap.sh
+No kind clusters found.
+[1;34m==>[0m Creando clúster kind parkglobal-poc
+Creating cluster "parkglobal-poc" ...
+ • Ensuring node image (kindest/node:v1.35.0) 🖼  ...
+ ✓ Ensuring node image (kindest/node:v1.35.0) 🖼
+ • Preparing nodes 📦   ...
+ ✓ Preparing nodes 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+Set kubectl context to "kind-parkglobal-poc"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-parkglobal-poc
+
+Have a nice day! 👋
+node/parkglobal-poc-control-plane condition met
+[1;34m==>[0m Instalando Argo CD (chart 10.9.6)
+Release "argocd" does not exist. Installing it now.
+NAME: argocd
+LAST DEPLOYED: Mon Oct  5 23:07:31 2026
+NAMESPACE: argocd
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+In order to access the server UI you have the following options:
+
+1. kubectl port-forward service/argocd-server -n argocd 8080:443
+
+    and then open the browser on http://localhost:8080 and accept the certificate
+
+2. enable ingress in the values file `server.ingress.enabled` and either
+      - Add the annotation for ssl passthrough: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-1-ssl-passthrough
+      - Set the `configs.params."server.insecure"` in the values file and terminate SSL at your ingress: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-2-multiple-ingress-objects-and-hosts
+
+
+After reaching the UI the first time you can login with username: admin and the random password generated during the installation. You can find the password by running:
+
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+
+(You should delete the initial secret afterwards as suggested by the Getting Started Guide: https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli)
+[1;34m==>[0m Registrando el repositorio GitOps en Argo CD (token solo en el clúster)
+[1;34m==>[0m Aplicando app-of-apps
+Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name including a path (/) to avoid accidental conflicts with other finalizer writers
+application.argoproj.io/root created
+./scripts/wait-platform.sh
+Esperando: root(/) crossplane(missing) kyverno(missing) cloudnative-pg(missing) platform-tenants(missing) platform-crossplane(missing) platform-policies(missing) claims-appset(missing)
+Esperando: root(OutOfSync/Progressing) crossplane(Synced/Progressing) kyverno(OutOfSync/Healthy) cloudnative-pg(Synced/Progressing) platform-tenants(missing) platform-crossplane(missing) platform-policies(missing) claims-appset(missing)
+Esperando: root(OutOfSync/Progressing) kyverno(OutOfSync/Progressing) platform-crossplane(Synced/Progressing) claims-appset(missing)
+Esperando: root(OutOfSync/Progressing) kyverno(Synced/Progressing) platform-crossplane(Synced/Progressing) claims-appset(missing)
+Esperando: root(Synced/Progressing) kyverno(Synced/Progressing)
+[1;34m==>[0m Plataforma Synced/Healthy
+NAME                        SYNC STATUS   HEALTH STATUS
+claim-parking-core-e2e-db   Synced        Progressing
+claims-appset               Synced        Healthy
+cloudnative-pg              Synced        Healthy
+crossplane                  Synced        Healthy
+kyverno                     Synced        Healthy
+platform-crossplane         Synced        Healthy
+platform-policies           Synced        Healthy
+platform-tenants            Synced        Healthy
+root                        Synced        Healthy
+kubectl --context kind-parkglobal-poc get xrd,compositions,functions
+NAME                                                                                            ESTABLISHED   OFFERED   AGE
+compositeresourcedefinition.apiextensions.crossplane.io/databaseclaims.platform.parkglobal.io   True                    51s
+
+NAME                                                         XR-KIND         XR-APIVERSION                     AGE
+composition.apiextensions.crossplane.io/databaseclaim-cnpg   DatabaseClaim   platform.parkglobal.io/v1alpha1   51s
+
+NAME                                                INSTALLED   HEALTHY   PACKAGE                                                                AGE
+function.pkg.crossplane.io/function-auto-ready      True        True      xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.7.0       51s
+function.pkg.crossplane.io/function-go-templating   True        True      xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.13.0   51s
+rc=0  duración=147s  fin 2026-10-06T04:09:19Z

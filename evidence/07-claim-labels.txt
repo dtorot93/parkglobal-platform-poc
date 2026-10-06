@@ -1,0 +1,2 @@
+$ kubectl --context kind-parkglobal-poc -n team-parking-core get databaseclaim e2e-db -o jsonpath={.metadata.labels}
+{"crossplane.io/composite":"e2e-db","parkglobal.io/cost-center":"CC-PARK-01","parkglobal.io/team":"parking-core"}

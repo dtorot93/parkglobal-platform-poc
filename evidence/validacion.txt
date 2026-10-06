@@ -1,0 +1,145 @@
+
+======== 1. Plataforma sana ========
+$ kubectl --context kind-parkglobal-poc get nodes
+NAME                           STATUS   ROLES           AGE    VERSION
+parkglobal-poc-control-plane   Ready    control-plane   115m   v1.35.0
+
+$ kubectl --context kind-parkglobal-poc -n argocd get applications
+NAME                        SYNC STATUS   HEALTH STATUS
+claim-parking-core-e2e-db   Synced        Healthy
+claims-appset               Synced        Healthy
+cloudnative-pg              Synced        Healthy
+crossplane                  Synced        Healthy
+kyverno                     Synced        Healthy
+platform-crossplane         Synced        Healthy
+platform-policies           Synced        Healthy
+platform-tenants            Synced        Healthy
+root                        Synced        Healthy
+
+$ kubectl get pods -A | grep -vE "Running|Completed"   # solo cabecera
+NAMESPACE            NAME                                                   READY   STATUS      RESTARTS   AGE
+
+
+======== 2. Platform API ========
+$ kubectl --context kind-parkglobal-poc get xrd databaseclaims.platform.parkglobal.io
+NAME                                    ESTABLISHED   OFFERED   AGE
+databaseclaims.platform.parkglobal.io   True                    42m
+
+$ kubectl --context kind-parkglobal-poc get compositions
+NAME                 XR-KIND         XR-APIVERSION                     AGE
+databaseclaim-cnpg   DatabaseClaim   platform.parkglobal.io/v1alpha1   42m
+
+$ kubectl --context kind-parkglobal-poc get functions
+NAME                     INSTALLED   HEALTHY   PACKAGE                                                                AGE
+function-auto-ready      True        True      xpkg.crossplane.io/crossplane-contrib/function-auto-ready:v0.7.0       42m
+function-go-templating   True        True      xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.13.0   42m
+
+
+======== 3. Políticas (unitarias + servidor) ========
+$ kyverno test platform/kyverno/tests
+Test Summary: 9 tests passed and 0 tests failed
+
+OK rechazado: tests/fixtures/invalid-cost-center.yaml
+OK rechazado: tests/fixtures/invalid-medium-in-dev.yaml
+OK rechazado: tests/fixtures/invalid-namespace.yaml
+OK rechazado: tests/fixtures/invalid-no-owner.yaml
+$ kubectl --context kind-parkglobal-poc apply --dry-run=server -f tests/fixtures/valid-claim.yaml
+databaseclaim.platform.parkglobal.io/valid-db created (server dry run)
+
+$ ./scripts/validate-claims.sh   # mismo control que el CI
+OK claims de main válidos
+
+======== 4. End-to-end por PR (e2e-db) ========
+$ gh pr list --repo dtorot93/parkglobal-platform-poc --state all --head claim/e2e-db --json number,state,createdAt,mergedAt
+[{"createdAt":"2026-10-06T03:43:55Z","mergedAt":"2026-10-06T03:44:16Z","number":1,"state":"MERGED"}]
+
+$ gh pr checks 1 --repo dtorot93/parkglobal-platform-poc
+auto-merge	pass	7s	https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37410364201/job/112097254806	
+validate	pass	8s	https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37410364201/job/112097214534	
+
+$ kubectl --context kind-parkglobal-poc -n team-parking-core wait databaseclaim/e2e-db --for=condition=Ready --timeout=30s
+databaseclaim.platform.parkglobal.io/e2e-db condition met
+
+$ kubectl get secret e2e-db-app -o jsonpath='{.data}' | jq 'keys'
+["dbname","fqdn-jdbc-uri","fqdn-uri","host","jdbc-uri","password","pgpass","port","uri","user","username"]
+
+$ kubectl get databaseclaim e2e-db -o jsonpath='{.metadata.labels}'
+{"crossplane.io/composite":"e2e-db","parkglobal.io/cost-center":"CC-PARK-01","parkglobal.io/team":"parking-core"}
+
+$ evidence/lead-time.csv
+namespace,name,pr_created,pr_merged,ready_at,seconds_pr_to_merge,seconds_total
+team-parking-core,e2e-db,2026-10-06T03:43:55Z,2026-10-06T03:44:16Z,2026-10-06T03:46:07Z,21,132
+
+$ psql select 1 (ver evidence/12-psql-select1.txt)
+ ok 
+----
+  1
+(1 row)
+
+
+======== 5. Guardrail en CI (bad-medium-db) ========
+$ gh pr view 4 --repo dtorot93/parkglobal-platform-poc --json number,state,mergedAt -q {number,state,mergedAt}
+{"mergedAt":null,"number":4,"state":"OPEN"}
+
+$ gh pr checks 4
+validate	fail	7s	https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37411842200/job/112101771426	
+auto-merge	skipping	0	https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37411842200/job/112101810812	
+
+
+======== 6. Backstage ========
+$ ./scripts/catalog-query.sh template
+database-claim-postgresql
+
+$ ./scripts/catalog-query.sh resource
+e2e-db
+
+$ (cd backstage && yarn tsc)
+OK tsc sin errores
+
+
+======== 7. Higiene ========
+$ git grep -nE <patrones de secretos del spec>
+OK sin secretos
+
+$ git status --porcelain
+?? evidence/01-databaseclaims.txt
+?? evidence/02-databaseclaim-describe.txt
+?? evidence/03-cnpg-clusters.txt
+?? evidence/04-secret-keys.txt
+?? evidence/05-rbac.txt
+?? evidence/06-argocd-applications.txt
+?? evidence/07-claim-labels.txt
+?? evidence/08-pr-golden-path.txt
+?? evidence/09-kyverno-admission-rejections.txt
+?? evidence/10-pr-rechazado.txt
+?? evidence/11-ci-rechazo-kyverno.txt
+?? evidence/12-psql-select1.txt
+?? evidence/13-lead-time.csv
+?? evidence/14-incidente-guardrail-ci.txt
+?? evidence/lead-time.csv
+?? evidence/validacion.txt
+?? scripts/acceptance.sh
+
+$ gh repo view dtorot93/parkglobal-platform-poc --json url -q .url
+https://github.com/dtorot93/parkglobal-platform-poc
+
+
+======== 8. Reproducibilidad ========
+$ make teardown && make bootstrap && make platform   # inicio 2026-10-06T04:06:52Z
+rc=0  duración=147s  fin 2026-10-06T04:09:19Z
+
+$ kubectl -n argocd get applications   # tras reconstruir
+NAME                        SYNC STATUS   HEALTH STATUS
+claim-parking-core-e2e-db   Synced        Healthy
+claims-appset               Synced        Healthy
+cloudnative-pg              Synced        Healthy
+crossplane                  Synced        Healthy
+kyverno                     Synced        Healthy
+platform-crossplane         Synced        Healthy
+platform-policies           Synced        Healthy
+platform-tenants            Synced        Healthy
+root                        Synced        Healthy
+
+$ kubectl get databaseclaims -A   # e2e-db recreado desde Git, sin pasos manuales
+NAMESPACE           NAME     SIZE    ENV   ENDPOINT                          SYNCED   READY   COMPOSITION          AGE
+team-parking-core   e2e-db   small   dev   e2e-db-rw.team-parking-core.svc   True     True    databaseclaim-cnpg   57s

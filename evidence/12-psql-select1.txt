@@ -1,0 +1,15 @@
+$ kubectl run psql-check (URI tomado de secretKeyRef e2e-db-app/uri) -- psql "$URI" -c 'select 1'
+ ok 
+----
+  1
+(1 row)
+
+All commands and output from this session will be recorded in container logs, including credentials and sensitive information passed through the command prompt.
+If you don't see a command prompt, try pressing enter.
+warning: couldn't attach to pod/psql-check, falling back to streaming logs: Internal error occurred: unable to upgrade connection: container psql-check not found in pod psql-check_team-parking-core
+ ok 
+----
+  1
+(1 row)
+
+pod "psql-check" deleted from team-parking-core namespace

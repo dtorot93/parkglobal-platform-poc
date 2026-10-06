@@ -57,6 +57,7 @@ make platform     # espera a que todo quede Synced/Healthy (≈5–8 min la prim
 make test         # kyverno test: pruebas unitarias de las políticas
 make validate     # dry-run en servidor: los fixtures inválidos se rechazan en admisión
 make backstage    # Backstage en http://localhost:3000 (log: evidence/raw/backstage.log)
+make acceptance   # criterios de aceptación (solo lectura) -> evidence/validacion.txt
 ```
 
 `make backstage` exporta `GITHUB_TOKEN` desde `gh auth token`. Usa yarn 4.13.0 vía `corepack yarn` con `COREPACK_HOME=.corepack` (caché propia del proyecto); la yarn 1 global no funciona con esta app.
@@ -73,6 +74,12 @@ make backstage    # Backstage en http://localhost:3000 (log: evidence/raw/backst
 7. **Guardrail:** `./scripts/request-db.sh parking-core bad-db medium dev CC-PARK-01` → check rojo con el mensaje «El tamaño medium solo se permite en staging…»; el PR no se integra.
 8. **Evidencia:** `make evidence`.
 
+## Flujo de Git
+
+- Los claims **siempre** entran por PR (`claim/<name>`) y se integran solos si pasan Kyverno. Los cambios de plataforma (`platform/`, `.github/`, `scripts/`) van a `main` por el Platform Team.
+- Como los auto-merges crean commits en `origin/main`, antes de empujar cambios de plataforma ejecuta `git pull --rebase origin main`.
+- `scripts/validate-claims.sh` es el mismo control del CI y se puede ejecutar en local: pasa cada claim de forma explícita, verifica cuántos recursos evaluó Kyverno y corre un canario que debe ser rechazado.
+
 ## Configuración del repositorio para el auto-merge
 
 El job `auto-merge` usa el `GITHUB_TOKEN` de Actions con `contents: write` y `pull-requests: write` declarados en el workflow, así que no requiere cambiar settings en un repo personal. Si la organización restringe los permisos de los workflows, habilita *Settings → Actions → General → Workflow permissions → Read and write*. En producción se agrega protección de rama con el check `validate` obligatorio (ADR-003).
@@ -81,6 +88,8 @@ El job `auto-merge` usa el `GITHUB_TOKEN` de Actions con `contents: write` y `pu
 
 | Síntoma | Causa / solución |
 |---|---|
+| `kyverno` o `platform-policies` OutOfSync con todo Healthy | Kyverno completa valores por defecto; las apps usan `ServerSideDiff=true` e `ignoreDifferences`. Haz un hard refresh de la app. |
+| App `claim-*` borrada que tarda en desaparecer | Argo CD espera a que termine la operación de sync en curso (reintentos de un claim rechazado por admisión, ≤ 5 min). |
 | Apps `platform-*` en `Unknown` / ComparisonError | Argo CD no puede leer el repo: vuelve a ejecutar `make bootstrap` con `gh auth status` válido. |
 | `platform-policies` reintenta con «kind not found» | La XRD aún no está *Established*; los reintentos lo resuelven solos en 1–2 min. |
 | Claim `Synced=False` | `kubectl describe databaseclaim <n>`; revisa `kubectl get functions` (HEALTHY=True) y el ClusterRole agregado. |
@@ -98,6 +107,19 @@ El job `auto-merge` usa el `GITHUB_TOKEN` de Actions con `contents: write` y `pu
 | Secreto | Secret de Kubernetes | AWS Secrets Manager + External Secrets |
 | Identidad | Grupos RBAC | Okta → OIDC |
 | Portal | Backstage local (guest) | Backstage existente |
+
+## Desviaciones respecto del spec de ejecución
+
+| Spec | PoC | Razón |
+|---|---|---|
+| XRD con `OFFERED=True` | `OFFERED` vacío | Crossplane v2 con XR namespaced no tiene claims, así que no hay nada que "ofrecer" (ADR-004). `ESTABLISHED=True`. |
+| `curl` sin credenciales a `/api/catalog` | `scripts/catalog-query.sh` | Backstage 1.55 exige token; se usa el de invitado, sin relajar la autenticación. |
+| `kyverno apply -r claims/` en CI | `scripts/validate-claims.sh` | `-r` no es recursivo y el check pasaba con 0 recursos (ADR-003). |
+| `function-patch-and-transform` | `function-go-templating` + `function-auto-ready` | Mapear `readers` (array) a `subjects` del RoleBinding (ADR-004). |
+| `yarn start` | `corepack yarn start` con `COREPACK_HOME=.corepack` | La yarn 1 global no corre proyectos yarn 4 y la caché global de corepack estaba corrupta. |
+| `@yarnpkg/core` sin fijar | `resolutions: 4.9.1` | La 4.9.2 se publicó con un parche local inexistente y rompe `yarn install`. |
+| `ClusterPolicy` sin advertencias | `ClusterPolicy` (deprecada en Kyverno 1.19) | El spec la exige; la migración a `ValidatingPolicy` (CEL) queda en el backlog (ADR-001). |
+| Argo CD Synced sin ajustes | `ServerSideDiff` + `ignoreDifferences` | Kyverno completa valores por defecto y el chart emite `labels: {}`; no es drift real. |
 
 ## Fuera de alcance (TODO, fase 2)
 

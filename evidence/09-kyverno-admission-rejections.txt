@@ -1,0 +1,31 @@
+$ kubectl apply --dry-run=server -f tests/fixtures/invalid-cost-center.yaml
+Error from server: error when creating "tests/fixtures/invalid-cost-center.yaml": admission webhook "validate.kyverno.svc-fail" denied the request: 
+
+resource DatabaseClaim/team-parking-core/bad-cost-center-db was blocked due to the following policies 
+
+require-registered-cost-center:
+  cost-center-registered: El centro de costo CC-XYZ-99 no está registrado (FinOps).
+OK rechazado: tests/fixtures/invalid-cost-center.yaml
+
+$ kubectl apply --dry-run=server -f tests/fixtures/invalid-medium-in-dev.yaml
+Error from server: error when creating "tests/fixtures/invalid-medium-in-dev.yaml": admission webhook "validate.kyverno.svc-fail" denied the request: 
+
+resource DatabaseClaim/team-parking-core/medium-in-dev-db was blocked due to the following policies 
+
+restrict-size-by-environment:
+  only-small-in-dev: El tamaño medium solo se permite en staging; en dev use small (cost gate FinOps).
+OK rechazado: tests/fixtures/invalid-medium-in-dev.yaml
+
+$ kubectl apply --dry-run=server -f tests/fixtures/invalid-namespace.yaml
+Error from server: error when creating "tests/fixtures/invalid-namespace.yaml": admission webhook "validate.kyverno.svc-fail" denied the request: 
+
+resource DatabaseClaim/team-payments-core/wrong-namespace-db was blocked due to the following policies 
+
+namespace-matches-owner:
+  namespace-is-team-namespace: El DatabaseClaim debe crearse en el namespace team-parking-core, no en team-payments-core.
+OK rechazado: tests/fixtures/invalid-namespace.yaml
+
+$ kubectl apply --dry-run=server -f tests/fixtures/invalid-no-owner.yaml
+The DatabaseClaim "no-owner-db" is invalid: spec.owner: Required value
+OK rechazado: tests/fixtures/invalid-no-owner.yaml
+

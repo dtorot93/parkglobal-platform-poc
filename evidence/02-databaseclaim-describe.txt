@@ -1,0 +1,69 @@
+$ kubectl --context kind-parkglobal-poc -n team-parking-core describe databaseclaim e2e-db
+Name:         e2e-db
+Namespace:    team-parking-core
+Labels:       crossplane.io/composite=e2e-db
+              parkglobal.io/cost-center=CC-PARK-01
+              parkglobal.io/team=parking-core
+Annotations:  argocd.argoproj.io/tracking-id: claim-parking-core-e2e-db:platform.parkglobal.io/DatabaseClaim:team-parking-core/e2e-db
+API Version:  platform.parkglobal.io/v1alpha1
+Kind:         DatabaseClaim
+Metadata:
+  Creation Timestamp:  2026-10-06T03:45:18Z
+  Finalizers:
+    composite.apiextensions.crossplane.io
+  Generation:        3
+  Resource Version:  14724
+  UID:               47ca7ec3-cf96-49da-8dbc-87bd36986c70
+Spec:
+  Access:
+    Readers:
+      grp-parking-core
+  Crossplane:
+    Composition Ref:
+      Name:  databaseclaim-cnpg
+    Composition Revision Ref:
+      Name:                     databaseclaim-cnpg-c83f5ab
+    Composition Update Policy:  Automatic
+    Resource Refs:
+      API Version:  postgresql.cnpg.io/v1
+      Kind:         Cluster
+      Name:         e2e-db
+      API Version:  rbac.authorization.k8s.io/v1
+      Kind:         RoleBinding
+      Name:         e2e-db-secret-readers
+      API Version:  rbac.authorization.k8s.io/v1
+      Kind:         Role
+      Name:         e2e-db-secret-reader
+  Engine:           postgresql
+  Environment:      dev
+  Owner:
+    Cost Center:  CC-PARK-01
+    Team:         parking-core
+  Size:           small
+Status:
+  Conditions:
+    Last Transition Time:  2026-10-06T03:45:22Z
+    Observed Generation:   3
+    Reason:                ReconcileSuccess
+    Status:                True
+    Type:                  Synced
+    Last Transition Time:  2026-10-06T03:46:07Z
+    Observed Generation:   3
+    Reason:                Available
+    Status:                True
+    Type:                  Ready
+    Last Transition Time:  2026-10-06T03:45:22Z
+    Observed Generation:   3
+    Reason:                WatchCircuitClosed
+    Status:                True
+    Type:                  Responsive
+  Endpoint:                e2e-db-rw.team-parking-core.svc
+  Ready:                   true
+  Secret Ref:              e2e-db-app
+Events:
+  Type    Reason                Age                 From                                                             Message
+  ----    ------                ----                ----                                                             -------
+  Normal  CompositionSelection  20m                 defined/compositeresourcedefinition.apiextensions.crossplane.io  Default composition has been selected
+  Normal  SelectComposition     20m                 defined/compositeresourcedefinition.apiextensions.crossplane.io  Successfully selected composition: databaseclaim-cnpg
+  Normal  SelectComposition     20m                 defined/compositeresourcedefinition.apiextensions.crossplane.io  Selected composition revision: databaseclaim-cnpg-c83f5ab
+  Normal  ComposeResources      19m (x22 over 20m)  defined/compositeresourcedefinition.apiextensions.crossplane.io  Composed resource "cluster" is not yet ready

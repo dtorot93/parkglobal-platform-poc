@@ -1,0 +1,13 @@
+# Incidente: PR #2 (bad-db) integrado por un guardrail de CI que fallaba abierto
+
+$ gh pr view 2 --json number,title,state,mergedAt,statusCheckRollup
+{"mergedAt":"2026-10-06T03:47:19Z","number":2,"state":"MERGED","statusCheckRollup":[{"__typename":"CheckRun","completedAt":"2026-10-06T03:47:13Z","conclusion":"SUCCESS","detailsUrl":"https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37410607988/job/112097967026","name":"validate","startedAt":"2026-10-06T03:47:06Z","status":"COMPLETED","workflowName":"validate-and-merge-claims"},{"__typename":"CheckRun","completedAt":"2026-10-06T03:47:22Z","conclusion":"SUCCESS","detailsUrl":"https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37410607988/job/112098000633","name":"auto-merge","startedAt":"2026-10-06T03:47:15Z","status":"COMPLETED","workflowName":"validate-and-merge-claims"}],"title":"[golden-path] DatabaseClaim bad-db"}
+
+$ gh run view 37410607988 --log | grep "Políticas Kyverno"   # 0 recursos evaluados
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones)	2026-10-06T03:47:11.9048150Z Applying 6 policy rule(s) to 0 resource(s)...
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones)	2026-10-06T03:47:11.9104329Z pass: 0, fail: 0, warn: 0, error: 0, skip: 0 
+
+# Segunda barrera: Kyverno en admisión rechazó bad-db (Argo CD no pudo aplicarlo; nunca existió en el clúster)
+# Remediación: PR #3 (manual) retiró claims/parking-core/bad-db; ver docs/adr/ADR-003.
+$ gh pr view 3 --json number,title,state,mergedAt,statusCheckRollup
+{"mergedAt":"2026-10-06T04:01:35Z","number":3,"state":"MERGED","statusCheckRollup":[{"__typename":"CheckRun","completedAt":"2026-10-06T04:00:25Z","conclusion":"SUCCESS","detailsUrl":"https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37411630340/job/112101128082","name":"validate","startedAt":"2026-10-06T04:00:18Z","status":"COMPLETED","workflowName":"validate-and-merge-claims"},{"__typename":"CheckRun","completedAt":"2026-10-06T04:00:25Z","conclusion":"SKIPPED","detailsUrl":"https://github.com/dtorot93/parkglobal-platform-poc/actions/runs/37411630340/job/112101169600","name":"auto-merge","startedAt":"2026-10-06T04:00:26Z","status":"COMPLETED","workflowName":"validate-and-merge-claims"}],"title":"Retirar claim bad-db integrado por fallo del guardrail"}

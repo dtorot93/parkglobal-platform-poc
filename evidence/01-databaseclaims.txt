@@ -1,0 +1,3 @@
+$ kubectl --context kind-parkglobal-poc get databaseclaims -A -o wide
+NAMESPACE           NAME     SIZE    ENV   ENDPOINT                          SYNCED   READY   COMPOSITION          COMPOSITIONREVISION          AGE
+team-parking-core   e2e-db   small   dev   e2e-db-rw.team-parking-core.svc   True     True    databaseclaim-cnpg   databaseclaim-cnpg-c83f5ab   20m

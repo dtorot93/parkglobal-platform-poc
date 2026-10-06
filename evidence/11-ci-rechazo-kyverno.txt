@@ -1,0 +1,66 @@
+$ gh run view 37411842200 --repo dtorot93/parkglobal-platform-poc --log-failed
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	﻿2026-10-06T04:02:57.9408049Z ##[group]Run ./scripts/validate-claims.sh
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:57.9408412Z ^[[36;1m./scripts/validate-claims.sh^[[0m
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:57.9471526Z shell: /usr/bin/bash -e {0}
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:57.9471810Z env:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:57.9472007Z   KYVERNO_VERSION: v1.19.1
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:57.9472274Z   KUBECONFORM_VERSION: v0.8.0
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:57.9472508Z ##[endgroup]
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.5018647Z Evaluando 2 claim(s): claims/parking-core/bad-medium-db/databaseclaim.yaml claims/parking-core/e2e-db/databaseclaim.yaml
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9977026Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9977554Z Applying 6 policy rule(s) to 2 resource(s)...
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9978002Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9978632Z policy add-finops-labels applied to team-parking-core/DatabaseClaim/bad-medium-db:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9979576Z apiVersion: platform.parkglobal.io/v1alpha1
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9980211Z kind: DatabaseClaim
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9980423Z metadata:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9980624Z     labels:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9980842Z         parkglobal.io/cost-center: CC-PARK-01
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9981230Z         parkglobal.io/team: parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9981516Z     name: bad-medium-db
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9981756Z     namespace: team-parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9982317Z spec:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9982495Z     access:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9982929Z         readers:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9983191Z             - grp-parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9983571Z     engine: postgresql
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9983941Z     environment: dev
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9984288Z     owner:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9984621Z         costCenter: CC-PARK-01
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9985040Z         team: parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9985420Z     size: medium
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9985619Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9985730Z ---
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9985877Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9985884Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9986020Z Mutation:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9986371Z Mutation has been applied successfully.
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9987079Z policy add-finops-labels applied to team-parking-core/DatabaseClaim/e2e-db:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9987869Z apiVersion: platform.parkglobal.io/v1alpha1
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9988395Z kind: DatabaseClaim
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9988806Z metadata:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9989122Z     labels:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9989504Z         parkglobal.io/cost-center: CC-PARK-01
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9990035Z         parkglobal.io/team: parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9990501Z     name: e2e-db
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9990879Z     namespace: team-parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9991304Z spec:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9991608Z     access:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9991918Z         readers:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9992268Z             - grp-parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9992660Z     engine: postgresql
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9993281Z     environment: dev
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9993631Z     owner:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9993962Z         costCenter: CC-PARK-01
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9994372Z         team: parking-core
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9994754Z     size: small
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9994965Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9995095Z ---
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9995268Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9995285Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9995426Z Mutation:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9996478Z Mutation has been applied successfully.policy restrict-size-by-environment -> resource team-parking-core/DatabaseClaim/bad-medium-db failed:
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9998388Z 1 - only-small-in-dev El tamaño medium solo se permite en staging; en dev use small (cost gate FinOps).
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9999118Z 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:58.9999317Z pass: 11, fail: 1, warn: 0, error: 0, skip: 0 
+validate	Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)	2026-10-06T04:02:59.0020568Z ##[error]Process completed with exit code 1.
