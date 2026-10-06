@@ -1,0 +1,10 @@
+node_modules/
+.env*
+*.kubeconfig
+evidence/raw/*.secret
+evidence/raw/*.log
+backstage/dist/
+backstage/dist-types/
+backstage/**/app-config.local.yaml
+.DS_Store
+.corepack/

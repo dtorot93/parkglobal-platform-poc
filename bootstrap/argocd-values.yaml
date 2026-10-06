@@ -1,0 +1,33 @@
+# Valores del único helm install imperativo (Paso 3). Chart argo/argo-cd 10.9.6 (Argo CD v3.5.3).
+configs:
+  params:
+    server.insecure: true            # acceso por port-forward sin TLS
+  cm:
+    timeout.reconciliation: 30s      # detecta los merges de claims en ≤30 s
+    # Salud de Applications: necesaria para que los sync-waves del app-of-apps esperen a cada capa.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then hs.message = obj.status.health.message end
+      end
+      return hs
+    # Salud de la Platform API: el claim está Healthy cuando Crossplane lo marca Ready.
+    resource.customizations.health.platform.parkglobal.io_DatabaseClaim: |
+      hs = { status = "Progressing", message = "Esperando a que la base de datos esté lista" }
+      if obj.status ~= nil and obj.status.conditions ~= nil then
+        for _, c in ipairs(obj.status.conditions) do
+          if c.type == "Ready" and c.status == "True" then
+            hs.status = "Healthy"; hs.message = c.reason or "Ready"
+          elseif c.type == "Synced" and c.status == "False" then
+            hs.status = "Degraded"; hs.message = c.message or "Synced=False"
+          end
+        end
+      end
+      return hs
+dex:
+  enabled: false
+notifications:
+  enabled: false
