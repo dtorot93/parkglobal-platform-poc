@@ -4,6 +4,9 @@ metadata:
   name: kyverno
   namespace: argocd
   annotations:
+    # Server-side diff: compara contra un dry-run del API server, que incluye los defaults
+    # de los webhooks de Kyverno y la normalización de CRDs (recomendado para Kyverno).
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
     argocd.argoproj.io/sync-wave: "-3"
   finalizers: [resources-finalizer.argocd.argoproj.io]
 spec:
