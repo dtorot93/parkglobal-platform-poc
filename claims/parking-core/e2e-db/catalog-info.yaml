@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: e2e-db
+  description: Base de datos PostgreSQL small (dev) solicitada por Golden Path
+  annotations:
+    parkglobal.io/cost-center: CC-PARK-01
+    parkglobal.io/secret-ref: e2e-db-app
+    backstage.io/kubernetes-namespace: team-parking-core
+  tags: [postgresql, golden-path, dev]
+spec:
+  type: database
+  owner: group:team-parking-core
+  system: parking
