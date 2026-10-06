@@ -23,6 +23,11 @@ echo "Evaluando ${#files[@]} claim(s): ${files[*]}"
 
 out=$(kyverno apply "$POLICIES" "${args[@]}" --values-file "$VALUES" 2>&1) && rc=0 || rc=$?
 echo "$out" | grep -v "is deprecated"
+# Anotaciones visibles en el PR: "<claim>: <mensaje de la política>"
+if [ "$rc" -ne 0 ]; then
+  echo "$out" | awk 'match($0, /DatabaseClaim\/[^ ]+ failed:/) { claim=substr($0, RSTART+14, RLENGTH-22) }
+    /^[0-9]+ - / && claim { sub(/^[0-9]+ - [^ ]+ /, ""); print "::error title=Kyverno::" claim ": " $0 }'
+fi
 evaluated=$(echo "$out" | sed -n 's/.*to \([0-9]*\) resource(s).*/\1/p' | head -1)
 if [ "${evaluated:-0}" -ne "${#files[@]}" ]; then
   echo "::error::Kyverno evaluó ${evaluated:-0} recursos de ${#files[@]} claims"; exit 1
