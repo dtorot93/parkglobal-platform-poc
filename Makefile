@@ -7,7 +7,7 @@ export COREPACK_ENABLE_DOWNLOAD_PROMPT := 0
 YARN  := corepack yarn
 export GITHUB_TOKEN ?= $(shell gh auth token 2>/dev/null)
 
-.PHONY: help bootstrap platform backstage backstage-stop e2e evidence test teardown argocd-ui validate
+.PHONY: acceptance help bootstrap platform backstage backstage-stop e2e evidence test teardown argocd-ui validate
 
 help: ## Lista los objetivos
 	@grep -E '^[a-z0-9-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -40,7 +40,10 @@ e2e: ## Solicitud por PR + espera Ready + lead time (NAME=e2e-db)
 	./scripts/measure-lead-time.sh team-parking-core $(or $(NAME),e2e-db)
 
 evidence: ## Recolecta evidencia en evidence/
-	./scripts/collect-evidence.sh
+	./scripts/collect-evidence.sh team-parking-core e2e-db bad-medium-db
+
+acceptance: ## Criterios de aceptación (solo lectura) -> evidence/validacion.txt
+	./scripts/acceptance.sh > evidence/validacion.txt 2>&1; cat evidence/validacion.txt
 
 argocd-ui: ## Port-forward de Argo CD en https://localhost:8080 (admin / ver comando)
 	@echo "Usuario admin. Contraseña: kubectl --context $(CTX) -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"

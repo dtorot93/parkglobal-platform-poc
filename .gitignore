@@ -8,3 +8,4 @@ backstage/dist-types/
 backstage/**/app-config.local.yaml
 .DS_Store
 .corepack/
+.playwright-mcp/
