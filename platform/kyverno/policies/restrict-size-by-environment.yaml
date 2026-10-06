@@ -1,0 +1,29 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-size-by-environment
+  annotations:
+    policies.kyverno.io/title: Tamaño permitido por entorno
+    policies.kyverno.io/category: FinOps
+    policies.kyverno.io/description: >-
+      Cost gate estático: en dev solo se permite small; medium solo en staging.
+spec:
+  background: false
+  rules:
+    - name: only-small-in-dev
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+      validate:
+        failureAction: Enforce
+        message: "El tamaño medium solo se permite en staging; en dev use small (cost gate FinOps)."
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.spec.environment || '' }}"
+                operator: Equals
+                value: dev
+              - key: "{{ request.object.spec.size || 'small' }}"
+                operator: Equals
+                value: medium

@@ -1,0 +1,11 @@
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: DatabaseClaim
+metadata:
+  name: no-owner-db
+  namespace: team-parking-core
+spec:
+  engine: postgresql
+  size: small
+  environment: dev
+  access:
+    readers: [grp-parking-core]

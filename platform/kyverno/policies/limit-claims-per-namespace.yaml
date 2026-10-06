@@ -1,0 +1,34 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: limit-claims-per-namespace
+  annotations:
+    policies.kyverno.io/title: Máximo de bases de datos por equipo
+    policies.kyverno.io/category: FinOps
+    policies.kyverno.io/description: >-
+      Un namespace de equipo admite como máximo 3 DatabaseClaim en la TVP.
+spec:
+  background: false
+  rules:
+    - name: max-3-claims
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+              operations: [CREATE]
+      context:
+        - name: claimcount
+          apiCall:
+            urlPath: "/apis/platform.parkglobal.io/v1alpha1/namespaces/{{ request.namespace }}/databaseclaims"
+            jmesPath: "items | length(@)"
+      validate:
+        failureAction: Enforce
+        message: >-
+          El namespace {{ request.namespace }} ya tiene {{ claimcount }} bases de datos (máximo 3 en la TVP).
+          Libere una existente o solicite una excepción al Platform Team (FinOps).
+        deny:
+          conditions:
+            any:
+              - key: "{{ claimcount }}"
+                operator: GreaterThanOrEquals
+                value: 3

@@ -1,0 +1,14 @@
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: DatabaseClaim
+metadata:
+  name: bad-cost-center-db
+  namespace: team-parking-core
+spec:
+  owner:
+    team: parking-core
+    costCenter: CC-XYZ-99
+  engine: postgresql
+  size: small
+  environment: dev
+  access:
+    readers: [grp-parking-core]

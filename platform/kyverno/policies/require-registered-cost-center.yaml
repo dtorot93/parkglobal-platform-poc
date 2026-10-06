@@ -1,0 +1,49 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-registered-cost-center
+  annotations:
+    policies.kyverno.io/title: Centro de costo registrado
+    policies.kyverno.io/category: FinOps
+    policies.kyverno.io/description: >-
+      Todo DatabaseClaim declara owner y un centro de costo registrado en kyverno/cost-centers.
+spec:
+  background: false
+  rules:
+    - name: require-owner
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+      validate:
+        failureAction: Enforce
+        message: "Todo DatabaseClaim debe declarar spec.owner.team y spec.owner.costCenter (FinOps)."
+        pattern:
+          spec:
+            owner:
+              team: "?*"
+              costCenter: "?*"
+    - name: cost-center-registered
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.owner.costCenter || '' }}"
+            operator: NotEquals
+            value: ""
+      context:
+        - name: costcenters
+          configMap:
+            name: cost-centers
+            namespace: kyverno
+      validate:
+        failureAction: Enforce
+        message: "El centro de costo {{ request.object.spec.owner.costCenter }} no está registrado (FinOps)."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.owner.costCenter }}"
+                operator: AnyNotIn
+                value: "{{ split(costcenters.data.allowed, ',') }}"

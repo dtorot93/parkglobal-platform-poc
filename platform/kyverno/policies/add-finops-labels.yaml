@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-finops-labels
+  annotations:
+    policies.kyverno.io/title: Etiquetas FinOps automáticas
+    policies.kyverno.io/category: FinOps
+    policies.kyverno.io/description: >-
+      Agrega parkglobal.io/team y parkglobal.io/cost-center desde spec.owner (showback desde el día 1).
+spec:
+  background: false
+  rules:
+    - name: label-from-owner
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.owner.team || '' }}"
+            operator: NotEquals
+            value: ""
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            labels:
+              parkglobal.io/team: "{{ request.object.spec.owner.team }}"
+              parkglobal.io/cost-center: "{{ request.object.spec.owner.costCenter }}"

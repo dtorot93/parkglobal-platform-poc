@@ -1,0 +1,28 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: databaseclaim-governance
+policies:
+  - ../policies/require-registered-cost-center.yaml
+  - ../policies/namespace-matches-owner.yaml
+  - ../policies/restrict-size-by-environment.yaml
+  - ../policies/limit-claims-per-namespace.yaml
+resources:
+  - ../../../tests/fixtures/valid-claim.yaml
+  - ../../../tests/fixtures/invalid-cost-center.yaml
+  - ../../../tests/fixtures/invalid-namespace.yaml
+  - ../../../tests/fixtures/invalid-medium-in-dev.yaml
+  - ../../../tests/fixtures/invalid-no-owner.yaml
+variables: values.yaml
+results:
+  # Claim válido: pasa todas las reglas
+  - { policy: require-registered-cost-center, rule: require-owner, kind: DatabaseClaim, resources: [valid-db], result: pass }
+  - { policy: require-registered-cost-center, rule: cost-center-registered, kind: DatabaseClaim, resources: [valid-db], result: pass }
+  - { policy: namespace-matches-owner, rule: namespace-is-team-namespace, kind: DatabaseClaim, resources: [valid-db], result: pass }
+  - { policy: restrict-size-by-environment, rule: only-small-in-dev, kind: DatabaseClaim, resources: [valid-db], result: pass }
+  - { policy: limit-claims-per-namespace, rule: max-3-claims, kind: DatabaseClaim, resources: [valid-db], result: pass }
+  # Inválidos: cada uno viola la regla que le corresponde
+  - { policy: require-registered-cost-center, rule: cost-center-registered, kind: DatabaseClaim, resources: [bad-cost-center-db], result: fail }
+  - { policy: namespace-matches-owner, rule: namespace-is-team-namespace, kind: DatabaseClaim, resources: [wrong-namespace-db], result: fail }
+  - { policy: restrict-size-by-environment, rule: only-small-in-dev, kind: DatabaseClaim, resources: [medium-in-dev-db], result: fail }
+  - { policy: require-registered-cost-center, rule: require-owner, kind: DatabaseClaim, resources: [no-owner-db], result: fail }

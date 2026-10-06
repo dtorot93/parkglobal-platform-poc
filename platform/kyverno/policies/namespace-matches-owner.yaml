@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: namespace-matches-owner
+  annotations:
+    policies.kyverno.io/title: Namespace del equipo propietario
+    policies.kyverno.io/category: Seguridad
+    policies.kyverno.io/description: >-
+      Un equipo solo puede solicitar bases de datos en su propio namespace team-<team>.
+spec:
+  background: false
+  rules:
+    - name: namespace-is-team-namespace
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+      validate:
+        failureAction: Enforce
+        message: >-
+          El DatabaseClaim debe crearse en el namespace team-{{ request.object.spec.owner.team || '<sin-owner>' }},
+          no en {{ request.object.metadata.namespace }}.
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.metadata.namespace }}"
+                operator: NotEquals
+                value: "team-{{ request.object.spec.owner.team || '' }}"
