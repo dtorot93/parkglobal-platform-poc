@@ -10,9 +10,9 @@ dir="claims/${team}/${name}"
 cd "$ROOT_DIR"
 
 wt=$(mktemp -d)
-trap 'git worktree remove --force "$wt" >/dev/null 2>&1 || true' EXIT
+trap 'git worktree remove --force "$wt" >/dev/null 2>&1 || true; git branch -D "$branch" >/dev/null 2>&1 || true' EXIT
 git fetch -q origin main
-git worktree add -q -b "$branch" "$wt" origin/main
+git worktree add -q -B "$branch" "$wt" origin/main
 mkdir -p "$wt/$dir"
 cat > "$wt/$dir/databaseclaim.yaml" <<YAML
 apiVersion: platform.parkglobal.io/v1alpha1
