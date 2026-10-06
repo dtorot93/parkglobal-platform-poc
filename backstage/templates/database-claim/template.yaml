@@ -23,6 +23,7 @@ spec:
         team:
           title: Equipo propietario
           type: string
+          description: Grupo del equipo (en ParkGlobal proviene de Okta).
           ui:field: OwnerPicker
           ui:options:
             catalogFilter:
@@ -48,7 +49,7 @@ spec:
         readers:
           title: Grupo lector del secreto
           type: string
-          description: Opcional. Por defecto grp-<equipo>.
+          description: Opcional. Por defecto grp-EQUIPO (p. ej. grp-parking-core).
   steps:
     - id: fetch
       name: Generar DatabaseClaim y entidad de catálogo
