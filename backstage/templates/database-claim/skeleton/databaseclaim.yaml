@@ -1,0 +1,14 @@
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: DatabaseClaim
+metadata:
+  name: ${{ values.name }}
+  namespace: team-${{ values.team }}
+spec:
+  owner:
+    team: ${{ values.team }}
+    costCenter: ${{ values.costCenter }}
+  engine: postgresql
+  size: ${{ values.size }}
+  environment: ${{ values.environment }}
+  access:
+    readers: [${{ values.readers }}]

@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: ${{ values.name }}
+  description: Base de datos PostgreSQL ${{ values.size }} (${{ values.environment }}) solicitada por Golden Path
+  annotations:
+    parkglobal.io/cost-center: ${{ values.costCenter }}
+    parkglobal.io/secret-ref: ${{ values.name }}-app
+    backstage.io/kubernetes-namespace: team-${{ values.team }}
+  tags: [postgresql, golden-path, ${{ values.environment }}]
+spec:
+  type: database
+  owner: group:team-${{ values.team }}
+  system: parking

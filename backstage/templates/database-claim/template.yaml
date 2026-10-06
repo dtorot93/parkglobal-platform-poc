@@ -1,0 +1,90 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: database-claim-postgresql
+  title: Solicitar base de datos PostgreSQL
+  description: >-
+    Golden Path (F1): solicita una base de datos PostgreSQL para dev o staging. Genera un DatabaseClaim,
+    abre un PR que Kyverno valida en CI y, si cumple las políticas, se integra y aprovisiona sin revisión humana.
+  tags: [golden-path, finops, postgresql]
+spec:
+  owner: group:team-parking-core
+  type: resource
+  parameters:
+    - title: Base de datos
+      required: [name, team, costCenter, size, environment]
+      properties:
+        name:
+          title: Nombre
+          type: string
+          description: Nombre DNS-1123 (minúsculas, números y guiones).
+          pattern: '^[a-z0-9]([-a-z0-9]{0,38}[a-z0-9])?$'
+          ui:autofocus: true
+        team:
+          title: Equipo propietario
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group]
+        costCenter:
+          title: Centro de costo
+          type: string
+          enum: [CC-PARK-01, CC-PAY-01]
+          enumNames: ['CC-PARK-01 · Parking BU', 'CC-PAY-01 · Payments BU']
+        size:
+          title: Tamaño
+          type: string
+          default: small
+          enum: [small, medium]
+          enumNames:
+            - 'small · 1 instancia, 1 GiB (dev y staging)'
+            - 'medium · 2 instancias en HA, 5 GiB (solo staging)'
+        environment:
+          title: Entorno
+          type: string
+          default: dev
+          enum: [dev, staging]
+        readers:
+          title: Grupo lector del secreto
+          type: string
+          description: Opcional. Por defecto grp-<equipo>.
+  steps:
+    - id: fetch
+      name: Generar DatabaseClaim y entidad de catálogo
+      action: fetch:template
+      input:
+        url: ./skeleton
+        targetPath: ./claims/${{ parameters.team | parseEntityRef | pick('name') | replace('team-', '') }}/${{ parameters.name }}
+        values:
+          name: ${{ parameters.name }}
+          team: ${{ parameters.team | parseEntityRef | pick('name') | replace('team-', '') }}
+          costCenter: ${{ parameters.costCenter }}
+          size: ${{ parameters.size }}
+          environment: ${{ parameters.environment }}
+          readers: ${{ parameters.readers or ('grp-' + (parameters.team | parseEntityRef | pick('name') | replace('team-', ''))) }}
+    - id: publish
+      name: Abrir PR en el repositorio GitOps
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=dtorot93&repo=parkglobal-platform-poc
+        branchName: claim/${{ parameters.name }}
+        title: '[golden-path] DatabaseClaim ${{ parameters.name }}'
+        description: |
+          Solicitud de base de datos PostgreSQL por Golden Path (Backstage).
+
+          | Campo | Valor |
+          |---|---|
+          | Equipo | ${{ parameters.team }} |
+          | Nombre | ${{ parameters.name }} |
+          | Tamaño | ${{ parameters.size }} |
+          | Entorno | ${{ parameters.environment }} |
+          | Centro de costo | ${{ parameters.costCenter }} |
+
+          Kyverno valida el claim en CI; si cumple las políticas, el PR se integra automáticamente.
+  output:
+    links:
+      - title: Pull request
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Recurso en el catálogo (disponible tras el merge)
+        url: /catalog/default/resource/${{ parameters.name }}

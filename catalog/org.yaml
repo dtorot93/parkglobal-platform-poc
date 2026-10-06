@@ -1,0 +1,48 @@
+# Organización de demo (anonimizada). En ParkGlobal estos grupos vienen de Okta.
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-parking-core
+  title: Parking Core
+  description: Squad stream-aligned de Parking BU (piloto del Golden Path).
+spec:
+  type: team
+  profile: { displayName: Parking Core }
+  children: []
+  members: [dev-parking]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-payments-core
+  title: Payments Core
+  description: Squad stream-aligned de Payments BU.
+spec:
+  type: team
+  profile: { displayName: Payments Core }
+  children: []
+  members: [dev-payments]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: dev-parking
+spec:
+  profile: { displayName: Dev Parking, email: dev-parking@parkglobal.example }
+  memberOf: [team-parking-core]
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: dev-payments
+spec:
+  profile: { displayName: Dev Payments, email: dev-payments@parkglobal.example }
+  memberOf: [team-payments-core]
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: parking
+  description: Sistema de parqueo digital (Parking BU).
+spec:
+  owner: group:team-parking-core
