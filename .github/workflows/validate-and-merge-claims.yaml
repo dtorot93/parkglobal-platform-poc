@@ -1,0 +1,59 @@
+# Shift-left: las mismas políticas Kyverno de admisión se evalúan en el PR.
+# Si pasan y la rama es claim/*, el PR se integra sin revisión humana (ADR-003).
+name: validate-and-merge-claims
+
+on:
+  pull_request:
+    paths:
+      - "claims/**"
+
+permissions:
+  contents: read
+
+env:
+  KYVERNO_VERSION: v1.19.1
+  KUBECONFORM_VERSION: v0.8.0
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: El PR solo toca claims/ (el auto-merge no puede colar cambios de plataforma)
+        if: startsWith(github.head_ref, 'claim/')
+        run: |
+          outside=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -v '^claims/' || true)
+          if [ -n "$outside" ]; then
+            echo "::error::Un PR claim/* solo puede modificar claims/. Archivos fuera de alcance:"; echo "$outside"; exit 1
+          fi
+
+      - name: Instalar CLIs (versiones fijas)
+        run: |
+          curl -sSL "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz" | tar -xz -C /usr/local/bin kyverno
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar -xz -C /usr/local/bin kubeconform
+          kyverno version && kubeconform -v
+
+      - name: YAML bien formado
+        run: kubeconform -summary -strict -ignore-missing-schemas claims/
+
+      - name: Pruebas unitarias de las políticas
+        run: kyverno test platform/kyverno/tests
+
+      - name: Políticas Kyverno sobre los claims (falla si hay violaciones)
+        run: kyverno apply platform/kyverno/policies -r claims/ --values-file platform/kyverno/tests/values.yaml
+
+  auto-merge:
+    needs: validate
+    if: startsWith(github.head_ref, 'claim/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge por política (sin revisión humana)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge ${{ github.event.pull_request.number }} --repo "${{ github.repository }}" --squash --delete-branch
