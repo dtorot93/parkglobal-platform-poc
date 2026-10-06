@@ -42,8 +42,8 @@ jobs:
       - name: Pruebas unitarias de las políticas
         run: kyverno test platform/kyverno/tests
 
-      - name: Políticas Kyverno sobre los claims (falla si hay violaciones)
-        run: kyverno apply platform/kyverno/policies -r claims/ --values-file platform/kyverno/tests/values.yaml
+      - name: Políticas Kyverno sobre los claims (falla si hay violaciones; falla cerrado)
+        run: ./scripts/validate-claims.sh
 
   auto-merge:
     needs: validate

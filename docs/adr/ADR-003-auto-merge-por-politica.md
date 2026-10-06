@@ -23,3 +23,13 @@ Salvaguardas:
 - (+) Cada solicitud queda auditada en Git (quién, qué, cuándo, qué política la validó).
 - (−) La calidad del control depende de las políticas: un hueco en ellas se integra sin ojos humanos. Se mitiga con pruebas (`kyverno test`) y con la segunda barrera en admisión.
 - (−) En producción se requiere protección de rama con el check `validate` obligatorio. En la PoC el repo es público y no se cambiaron sus settings.
+
+## Hallazgo durante la PoC (2026-10-05): un control que falla abierto
+La primera versión del job `validate` ejecutaba `kyverno apply ... -r claims/`. Ese comando **no recorre subdirectorios**: evaluó 0 recursos, terminó con código 0 y el PR `bad-db` (`medium` en `dev`) se integró automáticamente. La segunda barrera (Kyverno en admisión) lo rechazó y nada llegó al clúster, pero el guardrail de CI falló en silencio.
+
+Corrección (`scripts/validate-claims.sh`, mismo script en CI y en local):
+- Pasa cada `claims/**/databaseclaim.yaml` de forma explícita y falla si Kyverno evalúa menos recursos de los esperados.
+- **Canario:** antes de validar, comprueba que el fixture `invalid-medium-in-dev.yaml` sea rechazado; si no lo es, el job falla.
+- El claim inválido se retiró de `main` con un PR de remediación revisado por una persona (rama fuera de `claim/*`, sin auto-merge).
+
+Lección: con auto-merge, un check verde no basta; el pipeline debe demostrar que **evaluó** lo que debía y que es capaz de rechazar. La defensa en profundidad (CI + admisión) evitó el impacto.
