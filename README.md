@@ -85,6 +85,7 @@ El job `auto-merge` usa el `GITHUB_TOKEN` de Actions con `contents: write` y `pu
 | `platform-policies` reintenta con «kind not found» | La XRD aún no está *Established*; los reintentos lo resuelven solos en 1–2 min. |
 | Claim `Synced=False` | `kubectl describe databaseclaim <n>`; revisa `kubectl get functions` (HEALTHY=True) y el ClusterRole agregado. |
 | `yarn` no hace nada en `backstage/` | La yarn 1 global o una caché de corepack corrupta (`yarn.js` de 0 bytes). Usa `make backstage`, que fija `COREPACK_HOME=.corepack`. |
+| `curl` a `/api/catalog` devuelve `Missing credentials` | Backstage 1.x exige token; usa `./scripts/catalog-query.sh <kind>` (token de invitado). |
 | La entidad no aparece en el catálogo | Debe estar en `main`; el proveedor de GitHub corre cada minuto. Revisa `evidence/raw/backstage.log`. |
 | `kind create` cambió el contexto por defecto | `scripts/bootstrap.sh` lo restaura; todos los comandos usan `--context kind-parkglobal-poc`. |
 
