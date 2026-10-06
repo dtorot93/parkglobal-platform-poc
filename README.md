@@ -77,7 +77,13 @@ make acceptance   # criterios de aceptación (solo lectura) -> evidence/validaci
 ## Flujo de Git
 
 - Los claims **siempre** entran por PR (`claim/<name>`) y se integran solos si pasan Kyverno. Los cambios de plataforma (`platform/`, `.github/`, `scripts/`) van a `main` por el Platform Team.
-- Como los auto-merges crean commits en `origin/main`, antes de empujar cambios de plataforma ejecuta `git pull --rebase origin main`.
+- Los auto-merges crean commits en `origin/main`, así que tu `main` local suele quedar atrás. Para empujar cambios de plataforma, sigue este orden:
+  ```bash
+  git add <archivos> && git commit -m "..."   # 1. commit (git no rebasa con cambios sin confirmar)
+  git pull --rebase origin main               # 2. reaplica tus commits encima de los auto-merges
+  git push origin main                        # 3. push (nunca --force a main)
+  ```
+  Si el push se rechaza con `non-fast-forward`, repite los pasos 2 y 3.
 - `scripts/validate-claims.sh` es el mismo control del CI y se puede ejecutar en local: pasa cada claim de forma explícita, verifica cuántos recursos evaluó Kyverno y corre un canario que debe ser rechazado.
 
 ## Configuración del repositorio para el auto-merge
