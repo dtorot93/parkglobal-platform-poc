@@ -14,5 +14,11 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
+  # Argo CD agrega finalizers pre-delete a las Applications cuyo chart trae hooks de pre-borrado (kyverno).
+  ignoreDifferences:
+    - group: argoproj.io
+      kind: Application
+      jsonPointers: [/metadata/finalizers]
   syncPolicy:
     automated: { prune: true, selfHeal: true }
+    syncOptions: [RespectIgnoreDifferences=true]

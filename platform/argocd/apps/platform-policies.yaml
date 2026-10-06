@@ -14,7 +14,18 @@ spec:
     path: platform/kyverno/policies
   destination:
     server: https://kubernetes.default.svc
+  # Kyverno completa valores por defecto al admitir las políticas; no son drift.
+  # (validationFailureAction: Audit a nivel spec no aplica: cada regla declara failureAction: Enforce.)
+  ignoreDifferences:
+    - group: kyverno.io
+      kind: ClusterPolicy
+      jqPathExpressions:
+        - .spec.admission
+        - .spec.emitWarning
+        - .spec.validationFailureAction
+        - .spec.rules[].skipBackgroundRequests
+        - .spec.rules[].validate.allowExistingViolations
   syncPolicy:
     automated: { prune: true, selfHeal: true }
-    syncOptions: [ServerSideApply=true, SkipDryRunOnMissingResource=true]
+    syncOptions: [ServerSideApply=true, SkipDryRunOnMissingResource=true, RespectIgnoreDifferences=true]
     retry: { limit: 10, backoff: { duration: 10s, factor: 2, maxDuration: 3m } }
