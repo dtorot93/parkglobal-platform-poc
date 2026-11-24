@@ -2,7 +2,8 @@
 # Espera a que todas las Applications de plataforma queden Synced/Healthy.
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
-apps="root crossplane kyverno cloudnative-pg platform-tenants platform-crossplane platform-policies claims-appset"
+apps="root crossplane kyverno cloudnative-pg platform-tenants platform-crossplane platform-policies claims-appset
+      strimzi platform-events platform-registry streams-appset"   # P2: Golden Path de eventos
 deadline=$(( $(date +%s) + ${TIMEOUT:-900} ))
 while :; do
   pending=""

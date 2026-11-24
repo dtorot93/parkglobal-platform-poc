@@ -41,13 +41,13 @@ Teclas: en las láminas, flecha derecha. En la terminal, Enter **una sola vez** 
 
 ### 0:45 · Lámina 3 · Arquitectura
 
-> Reutilicé la plataforma de la primera parte. El equipo declara un EventStreamClaim, Kyverno lo valida y Crossplane lo convierte en tres cosas: un tópico compactado en Kafka con Strimzi, un contrato Avro en Apicurio y la configuración de cada equipo. Incluso la base de datos del registry se pidió con el Golden Path de la parte uno. Backstage y GitOps están implementados como código; hoy muestro el núcleo, corriendo en un clúster local.
+> Reutilicé la plataforma de la primera parte. El equipo declara un EventStreamClaim, Kyverno lo valida y Crossplane lo convierte en tres cosas: un tópico compactado en Kafka con Strimzi, un contrato Avro en Apicurio y la configuración de cada equipo. Incluso la base de datos del registry se pidió con el Golden Path de la parte uno. El flujo completo por GitHub ya lo probé con un pull request real: pasó el CI, se integró solo y Argo CD dejó el stream listo dos minutos y medio después de abrirlo. Hoy muestro el núcleo en vivo, en un clúster local.
 
 **Alt+Tab a la terminal.**
 
 ### 1:15 · Enter → paso 1 · Autoservicio
 
-Presiona Enter y empieza a hablar enseguida. Este paso tarda entre 4 y 36 segundos y los ✔ aparecen solos.
+Presiona Enter y empieza a hablar enseguida. Este paso tarda entre 5 y 40 segundos y los ✔ aparecen solos.
 
 > Creo un stream nuevo en vivo. Esto es todo lo que escribe el desarrollador: dueño, dominio, entidad, clave, versión del contrato y consumidores. No elige particiones, retención, compatibilidad ni serializadores. La plataforma crea el tópico compactado, registra el contrato con compatibilidad total y transitiva, y le entrega la configuración al dueño y a cada consumidor. El claim solo queda Ready cuando la plataforma verifica todo eso.
 
@@ -83,7 +83,7 @@ Este paso tarda unos 8 segundos.
 
 ### 4:15 · Lámina 5 · Cierre
 
-> La mejora de fondo es menos carga cognitiva extrínseca: el equipo aporta siete campos y su contrato, y la plataforma resuelve el cómo. Como siguientes pasos quedan probar el flujo GitOps de punta a punta y agregar autenticación y permisos al bus. Muchas gracias.
+> La mejora de fondo es menos carga cognitiva extrínseca: el equipo aporta siete campos y su contrato, y la plataforma resuelve el cómo. Como siguientes pasos quedan probar la plantilla en Backstage y agregar autenticación y permisos al bus. Muchas gracias.
 
 **Detén la grabación. Luego vuelve a la terminal y presiona Enter para restaurar el entorno.**
 
@@ -100,8 +100,8 @@ Este paso tarda unos 8 segundos.
 
 ## Qué no decir (no está demostrado)
 
-- «El PR se integra solo» o «Argo CD lo despliega»: ese flujo no se ha ejecutado para la parte 2.
-- «Queda listo en 4,5 segundos»: el claim tarda entre 4 y 36 segundos en quedar Ready.
+- «Esto lo hice desde Backstage»: el PR #6 se abrió a mano (el flujo PR → CI → auto-merge → Argo CD sí está verificado, en 2 min 34 s).
+- «Queda listo en 4,5 segundos»: el claim tarda entre 5 y 40 segundos en quedar Ready.
 - «Nadie puede escribir en un tópico ajeno»: Kyverno controla quién **declara** un stream. El bus de la PoC no tiene autenticación ni ACL.
 - «Es imposible publicar un evento inválido»: el control está en el serializador y en el registry. Kafka no valida los mensajes.
 - «Los números de la empresa mejoraron»: el «antes» viene del diagnóstico y el «ahora» se midió en la PoC.

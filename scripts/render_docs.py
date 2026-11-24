@@ -47,7 +47,7 @@ for f in sorted((ROOT / "docs" / "adr").glob("ADR-00[5-9]*.md")):
 
 names = {"00": "00 spike", "01": "01 estado", "02": "02 propagación", "03": "03 disponibilidad", "04": "04 relectura",
          "05": "05 tombstone", "06": "06 jerarquía", "07": "07 registry 409", "08": "08 evolución v2",
-         "09": "09 sin autorregistro", "10": "10 Kyverno", "11": "11 lead time", "12": "12 CI barrera 1", "re": "resumen"}
+         "09": "09 sin autorregistro", "10": "10 Kyverno", "11": "11 lead time", "12": "12 CI barrera 1", "13": "13 GitOps", "re": "resumen"}
 evidence = [{"name": names.get(k[:2], k), "text": v[:14000]} for k, v in ev.items()]
 
 rubric = [

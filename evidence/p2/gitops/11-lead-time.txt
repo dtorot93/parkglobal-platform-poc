@@ -1,0 +1,57 @@
+# 11 · Lead time del Golden Path de eventos · 2026-11-24T00:26:19Z
+# 5 streams nuevos: desde aplicar el claim hasta cada hito (sin contar el CI del PR)
+
+stream                  topico_ms  contrato_ms   ready_ms
+lead-192619-1                1425         5351      35925
+
+NAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE
+lead-192619-1-state   pricing.state.lead-192619-1.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-f1794a4   35s
+NAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY
+pricing.state.lead-192619-1.v1   events    3            1                    True
+NAME                                    DATA   AGE
+pricing.state.lead-192619-1.v1-client   13     36s
+
+lead-192658-2                1435         7565      33739
+
+NAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE
+lead-192658-2-state   pricing.state.lead-192658-2.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-f1794a4   34s
+NAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY
+pricing.state.lead-192658-2.v1   events    3            1                    True
+NAME                                    DATA   AGE
+pricing.state.lead-192658-2.v1-client   13     34s
+
+lead-192734-3                3587         7496      36920
+
+NAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE
+lead-192734-3-state   pricing.state.lead-192734-3.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-f1794a4   35s
+NAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY
+pricing.state.lead-192734-3.v1   events    3            1                    True
+NAME                                    DATA   AGE
+pricing.state.lead-192734-3.v1-client   13     34s
+
+lead-192813-4                1410         4850      31184
+
+NAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE
+lead-192813-4-state   pricing.state.lead-192813-4.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-f1794a4   32s
+NAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY
+pricing.state.lead-192813-4.v1   events    3            1                    True
+NAME                                    DATA   AGE
+pricing.state.lead-192813-4.v1-client   13     31s
+
+lead-192847-5                1443         5463       5468
+
+NAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE
+lead-192847-5-state   pricing.state.lead-192847-5.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-f1794a4   5s
+NAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY
+pricing.state.lead-192847-5.v1   events    3            1                    True
+NAME                                    DATA   AGE
+pricing.state.lead-192847-5.v1-client   13     6s
+
+
+Claim Ready: mínimo 5468 ms · mediana 33739 ms · máximo 36920 ms
+El tópico y el contrato quedan listos en segundos. El Ready del claim es bimodal (unos 5 s o unos 35 s) porque
+provider-kubernetes observa el estado del KafkaTopic por sondeo: a veces lo ve al instante y a veces en el siguiente ciclo.
+
+## Comprobaciones
+  ✔ Las 5 muestras quedaron Ready
+  ✔ Todas en menos de 60 s

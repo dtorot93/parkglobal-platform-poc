@@ -1,0 +1,46 @@
+# 05 · Tombstone · 2026-11-24T00:25:23Z
+# DELETE /tariffs/CO:1102 -> mensaje con valor nulo; los consumidores borran la clave (la compactación la retirará)
+
+## Consumidor C tras el tombstone (387 ms)
+{
+  "cityId": "CO-BOG",
+  "cityName": "Bogotá",
+  "zones": [
+    {
+      "zoneKey": "CO:1101",
+      "name": "Chapinero",
+      "status": "ACTIVE",
+      "zoneVersion": 1,
+      "tariff": {
+        "version": 41,
+        "currency": "COP",
+        "parkingFree": false,
+        "maxDailyPriceMinor": 10198,
+        "status": "ACTIVE"
+      },
+      "decision": {
+        "chargeType": "APARCAMIENTO_MAS_CARGA",
+        "commissionTier": "ESTANDAR"
+      }
+    },
+    {
+      "zoneKey": "CO:1102",
+      "name": "Usaquén",
+      "status": "ACTIVE",
+      "zoneVersion": 1,
+      "tariff": null,
+      "decision": {
+        "chargeType": "SIN_TARIFA",
+        "commissionTier": null
+      }
+    }
+  ]
+}
+
+## Alta de nuevo (386 ms): versión antes de la baja = 41, versión nueva = 42
+
+## Comprobaciones
+  ✔ El Consumidor C quitó la tarifa de CO:1102
+  ✔ Aplicó un tombstone más
+  ✔ La zona sin tarifa queda como SIN_TARIFA
+  ✔ Al volver, la versión sigue creciendo (41 -> 42): nadie la descarta por vieja

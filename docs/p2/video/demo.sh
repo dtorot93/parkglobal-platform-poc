@@ -123,7 +123,7 @@ echo
 cmd "kubectl apply -k <claim + contrato Avro>"
 CREATED=1; t=$(now)
 k apply --server-side -n team-tarifas -k "$TMP" >/dev/null
-# Cada hito se imprime cuando ocurre. El Ready del claim llega entre 4 y 36 s: el provider sondea el estado del tópico.
+# Cada hito se imprime cuando ocurre. El Ready del claim llega entre 5 y 40 s: el provider sondea el estado del tópico.
 topic= contract= config= ready=
 for _ in $(seq 1 300); do
   if [ -z "$topic" ] && [ "$(k -n kafka get kafkatopic "$TOPIC" -o jsonpath='{.status.conditions[0].status}' 2>/dev/null || true)" = True ]; then

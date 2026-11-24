@@ -46,7 +46,7 @@ th{color:var(--mut);font-weight:400}
   <h2>Cómo se hizo: se extendió la plataforma de la parte 1</h2>
   <div class="flow">
     <div class="box todo"><b>Backstage</b>formulario</div><div class="arr">→</div>
-    <div class="box todo"><b>GitHub + Argo CD</b>PR, CI y GitOps</div><div class="arr">→</div>
+    <div class="box"><b>GitHub + Argo CD</b>PR, CI, auto-merge y GitOps</div><div class="arr">→</div>
     <div class="box"><b>Kyverno</b>dueño, dominio, PII, costo</div><div class="arr">→</div>
     <div class="box"><b>Crossplane</b>EventStreamClaim</div>
   </div>
@@ -56,7 +56,7 @@ th{color:var(--mut);font-weight:400}
     <div class="box"><b>Apicurio Registry</b>contrato Avro, FULL_TRANSITIVE</div>
     <div class="box"><b>ConfigMap</b>configuración para dueño y consumidores</div>
   </div>
-  <p class="m" style="font-size:.8em">Borde continuo: se demuestra en vivo. Borde punteado: implementado como código, fuera de esta demo local.<br>
+  <p class="m" style="font-size:.8em">Borde punteado: implementado, sin probar en un Backstage en marcha. El flujo GitHub → Argo CD se verificó con el PR #6: stream listo en 2 min 34 s.<br>
   La base de datos del registry se pidió con el DatabaseClaim de la parte 1.</p>
 </section>
 
@@ -79,7 +79,7 @@ th{color:var(--mut);font-weight:400}
   <table>
     <tr><td class="m">El desarrollador aporta</td><td>7 campos obligatorios y su contrato</td></tr>
     <tr><td class="m">Ya no decide</td><td>particiones, compactación, subject, compatibilidad ni serializadores</td></tr>
-    <tr><td class="m">Siguiente paso</td><td>flujo GitOps de punta a punta, autenticación y ACL en el bus</td></tr>
+    <tr><td class="m">Siguiente paso</td><td>plantilla en Backstage, autenticación y ACL en el bus</td></tr>
   </table>
 </section>
 

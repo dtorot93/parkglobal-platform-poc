@@ -21,10 +21,16 @@ helm upgrade --install argocd argo/argo-cd --kube-context "$KCTX" -n argocd --cr
   --version "$ARGOCD_CHART_VERSION" -f bootstrap/argocd-values.yaml --wait --timeout 10m
 
 log "Registrando el repositorio GitOps en Argo CD (token solo en el clúster)"
-slug=$(repo_slug)
+slug=${REPO_SLUG:-$(repo_slug 2>/dev/null || git remote get-url origin | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')}
+token=$(github_token 2>/dev/null || true)
+creds=()
+if [ -n "$token" ]; then
+  creds=(--from-literal=username=x-access-token --from-literal=password="$token")
+else
+  log "Sin token de GitHub (ni GITHUB_TOKEN ni gh): se registra el repo como público"
+fi
 k -n argocd create secret generic repo-gitops \
-  --from-literal=type=git --from-literal=url="https://github.com/${slug}.git" \
-  --from-literal=username=x-access-token --from-literal=password="$(github_token)" \
+  --from-literal=type=git --from-literal=url="https://github.com/${slug}.git" "${creds[@]}" \
   --dry-run=client -o yaml | k label --local -f - argocd.argoproj.io/secret-type=repository -o yaml | k apply -f - >/dev/null
 
 log "Aplicando app-of-apps"

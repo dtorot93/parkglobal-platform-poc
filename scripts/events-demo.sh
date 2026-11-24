@@ -13,7 +13,7 @@ source "$(dirname "$0")/lib.sh"
 cd "$ROOT_DIR"
 # Ninguna llamada puede colgar la demo (--foreground: Ctrl+C sigue funcionando).
 k() { timeout --foreground -k 5 "${KTIMEOUT:-180}" kubectl --context "$KCTX" "$@"; }
-EV=evidence/p2
+EV=${EVIDENCE_DIR:-evidence/p2}   # EVIDENCE_DIR permite una corrida aparte sin pisar la evidencia publicada
 mkdir -p "$EV"
 TMP=$(mktemp -d)
 RESULTS=$TMP/results
@@ -127,7 +127,8 @@ s01() { # Estado de la plataforma: claims, tópicos compactados, subjects y conf
     k -n team-consumidor-c get cm pricing.state.zone-tariff.v1-client -o yaml | sed -n '/^data:/,/^kind:/p'
     echo; echo "## Comprobaciones"
     local claims topics
-    claims=$(k get eventstreamclaims -A -o json | jq '[.items[] | select(any(.status.conditions[]?; .type=="Ready" and .status=="True"))] | length')
+    claims=$(k get eventstreamclaims -A -o json | jq '[.items[] | select(.metadata.name=="zone-tariff-state" or .metadata.name=="zone-state")
+      | select(any(.status.conditions[]?; .type=="Ready" and .status=="True"))] | length')
     check "Los 2 claims del piloto están Ready" eq "$claims" 2
     topics=$(k -n kafka get kafkatopics -o json | jq '[.items[] | select(.metadata.name|test("^(pricing.state.zone-tariff|topology.state.zone).v1$")) | select(.spec.config["cleanup.policy"]=="compact")] | length')
     check "Los 2 tópicos son compactados" eq "$topics" 2

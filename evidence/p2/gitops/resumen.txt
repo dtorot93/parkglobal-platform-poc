@@ -1,0 +1,51 @@
+# Resumen de events-demo.sh · 2026-11-24T00:28:55Z · escenarios: 01 02 03 04 05 06 07 08 09 10 11
+# 48 comprobaciones correctas, 0 fallidas
+
+✔  01  Los 2 claims del piloto están Ready
+✔  01  Los 2 tópicos son compactados
+✔  01  pricing.state.zone-tariff.v1-value: FULL_TRANSITIVE
+✔  01  pricing.state.zone-tariff.v1-value: versiones registradas = las del repositorio ([1])
+✔  01  topology.state.zone.v1-value: FULL_TRANSITIVE
+✔  01  topology.state.zone.v1-value: versiones registradas = las del repositorio ([1])
+✔  01  El Consumidor C recibió la configuración de los 2 streams
+✔  02  El cambio llegó a las dos vistas locales
+✔  02  0 llamadas a la API de Tarifas por el cambio
+✔  02  zonas midió los 200 cambios de la ráfaga
+✔  02  zonas cumple el SLO (p99 < 5000 ms)
+✔  02  consumidor-c midió los 200 cambios de la ráfaga
+✔  02  consumidor-c cumple el SLO (p99 < 5000 ms)
+✔  03  Tarifas no tiene réplicas listas
+✔  03  Zonas responde la tarifa vigente de SE:4022 (10196)
+✔  03  El Consumidor C decide para las 2 zonas de Stockholm
+✔  04  Es un pod nuevo
+✔  04  Reconstruyó 5 tarifas y 5 zonas
+✔  04  Leyó desde el tópico (events_consumed > 0) y no recibió llamadas
+✔  05  El Consumidor C quitó la tarifa de CO:1102
+✔  05  Aplicó un tombstone más
+✔  05  La zona sin tarifa queda como SIN_TARIFA
+✔  05  Al volver, la versión sigue creciendo (41 -> 42): nadie la descarta por vieja
+✔  06  3 ciudades y 5 zonas
+✔  06  Las 5 zonas tienen tarifa
+✔  06  El cambio de Zonas (nombre) llegó sin tocar Tarifas
+✔  06  Ninguna tarifa espera a su zona
+✔  07  El registry responde 409
+✔  07  El diagnóstico señala el campo: [currency at /fields/6]
+✔  07  La versión rota no se registró ([1] = [1])
+✔  07  El chequeo del CI falla
+✔  07  El CI señala el mismo campo
+✔  08  El registry aceptó la v2 ([1,2])
+✔  08  El claim reporta contractVersion=v2 y contractRegistered=true
+✔  08  El productor publicó con v2 sin autorregistro
+✔  08  El lector v1 lee el mensaje v2 sin el campo nuevo
+✔  08  El lector v2 ve maxSessionMinutes=240
+✔  09  El serializador rechaza el contrato no registrado (40403)
+✔  09  El evento queda pendiente en el outbox
+✔  09  Tras restaurar, el outbox queda vacío
+✔  09  El cambio retenido llega al Consumidor C
+✔  10  Rechazado por la regla cost-center-registered
+✔  10  Rechazado por la regla domain-belongs-to-owner
+✔  10  Rechazado por la regla namespace-is-team-namespace
+✔  10  Rechazado por la regla deny-pii
+✔  10  Un claim válido se admite
+✔  11  Las 5 muestras quedaron Ready
+✔  11  Todas en menos de 60 s
