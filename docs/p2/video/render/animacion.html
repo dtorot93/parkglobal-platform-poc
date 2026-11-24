@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<title>Golden Path de eventos · video</title>
+<style>
+:root{--bg:#0b0d10;--panel:#141920;--panel2:#1b222b;--line:#2b333d;--fg:#eef2f6;--mut:#8b95a1;--cyan:#4fd1d9;--green:#5fd068;--red:#f0717b;--yellow:#f2c94c;--cyan-soft:rgba(79,209,217,.12);--red-soft:rgba(240,113,123,.12);--green-soft:rgba(95,208,104,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+body{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;color:var(--fg)}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;
+  background:radial-gradient(1400px 800px at 70% 10%,#121a22 0%,var(--bg) 60%)}
+.scene{position:absolute;inset:0;padding:150px 130px 90px;display:none}
+.c{color:var(--cyan)}.g{color:var(--green)}.r{color:var(--red)}.y{color:var(--yellow)}.m{color:var(--mut)}
+code,.mono{font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace}
+h1{font-size:92px;line-height:1.06;font-weight:700;letter-spacing:-1px}
+h2{font-size:58px;line-height:1.12;font-weight:700;letter-spacing:-.5px;margin-bottom:46px}
+.kicker{font-size:30px;color:var(--cyan);margin-bottom:26px;letter-spacing:.3px}
+/* cabecera y progreso */
+#chapter{position:absolute;left:130px;top:54px;font-size:26px;color:var(--mut);letter-spacing:.5px}
+#chapter b{color:var(--cyan);font-weight:600;margin-right:14px}
+#brand{position:absolute;right:130px;top:54px;font-size:24px;color:#59636e}
+#bar{position:absolute;left:0;bottom:0;height:6px;background:var(--cyan);opacity:.8}
+/* tarjeta de capítulo */
+.card{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:0 160px;background:var(--bg)}
+.card .num{font-size:220px;font-weight:800;color:var(--cyan);line-height:1}
+.card .tt{font-size:84px;font-weight:700;margin-top:10px}
+/* elementos comunes */
+.box{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:30px 34px}
+.box.acc{border-color:var(--cyan);background:linear-gradient(180deg,var(--cyan-soft),transparent 70%) var(--panel)}
+.tag{font-size:24px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+.row{display:flex;gap:40px;align-items:stretch}
+.pill{display:inline-block;padding:10px 22px;border-radius:999px;font-size:28px;border:2px solid var(--line);background:var(--panel)}
+/* 01 */
+.cards2{margin-top:70px;align-items:center}
+.pcard{flex:1;font-size:38px}.pcard .pt{margin-bottom:20px;line-height:1.25}.pcard code{font-size:34px;color:var(--mut)}
+.pcard.acc code{color:var(--cyan)}
+.arrow{font-size:70px;color:var(--mut)}
+/* 02 */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+.stat .n{font-size:150px;font-weight:800;color:var(--red);line-height:1}
+.stat .t{font-size:36px;line-height:1.3;margin-top:16px}
+.q{margin-top:70px;font-size:44px;color:var(--yellow)}
+/* diagramas */
+.diag{position:absolute;inset:0}
+.diag svg{position:absolute;inset:0;overflow:visible}
+.node{position:absolute;width:320px;height:124px;margin:-62px 0 0 -160px;border-radius:20px;background:var(--panel);border:2px solid var(--line);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;font-size:34px;font-weight:600}
+.node small{font-size:22px;font-weight:400;color:var(--mut);margin-top:4px}
+.node.bad{border-color:var(--red);background:linear-gradient(180deg,var(--red-soft),transparent) var(--panel)}
+.node.good{border-color:var(--green);background:linear-gradient(180deg,var(--green-soft),transparent) var(--panel)}
+.node.hot{border-color:var(--cyan);box-shadow:0 0 0 8px var(--cyan-soft)}
+.packet{position:absolute;transform:translate(-50%,-50%);font-family:"Cascadia Mono",Consolas,monospace;font-size:22px;padding:12px 16px;border-radius:12px;
+  background:#1d2630;border:2px solid var(--yellow);color:var(--yellow);white-space:pre;display:none;line-height:1.35}
+.packet.full{border-color:var(--cyan);color:var(--fg);background:#13232a}
+.lbl{position:absolute;font-size:28px;transform:translate(-50%,-50%);white-space:nowrap}
+.callout{position:absolute;font-size:40px;font-weight:700;padding:16px 30px;border-radius:16px}
+.callout.bad{color:var(--red);background:var(--red-soft);border:2px solid var(--red)}
+.callout.good{color:var(--green);background:var(--green-soft);border:2px solid var(--green)}
+.db{position:absolute;width:150px;transform:translate(-50%,-50%);text-align:center;font-size:22px;color:var(--green)}
+.db .cyl{height:54px;border:3px solid var(--green);border-radius:50%/14px;background:var(--green-soft);margin:0 auto 6px;width:90px}
+/* 04 overlay */
+.overlay{position:absolute;left:330px;right:330px;top:300px;padding:50px 60px}
+.overlay .big{font-size:52px;font-weight:700;line-height:1.2;margin-bottom:26px}
+.overlay .sub{font-size:36px;color:var(--mut);line-height:1.35}
+.chips{display:flex;gap:18px;flex-wrap:wrap;margin-top:34px}
+/* 05 */
+.yaml{flex:1.25;font-size:30px;line-height:1.62;padding:34px 38px}
+.yaml div{padding:0 14px;border-radius:8px;white-space:pre;transition:none}
+.yaml .k{color:var(--cyan)}.yaml .cm{color:#5f6b76}
+.yaml div.hl{background:rgba(79,209,217,.22);box-shadow:inset 6px 0 0 var(--cyan)}
+.yaml div.done{background:rgba(79,209,217,.08)}
+.side{flex:.75;display:flex;flex-direction:column;gap:28px}
+.badge{font-size:40px;font-weight:700;color:var(--green);line-height:1.25}
+.nolist{font-size:38px;line-height:1.75}
+.nolist div{position:relative;display:inline-block}
+.nolist div::after{content:"";position:absolute;left:-6px;right:-6px;top:52%;height:4px;background:var(--red);transform:scaleX(0);transform-origin:left}
+.nolist div.struck{color:var(--mut)}
+.nolist div.struck::after{transform:scaleX(1)}
+/* 06 */
+.pipe{position:absolute;left:110px;right:110px;top:470px;height:220px}
+.pnode{position:absolute;top:0;width:250px;height:180px;margin-left:-125px;border-radius:20px;background:var(--panel);border:2px solid var(--line);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;font-size:31px;font-weight:600;padding:0 12px}
+.pnode small{font-size:21px;color:var(--mut);font-weight:400;margin-top:8px;line-height:1.25}
+.pnode.on{border-color:var(--cyan);background:linear-gradient(180deg,var(--cyan-soft),transparent) var(--panel)}
+.pnode.on small{color:#b9c4cc}
+.group{position:absolute;top:-80px;height:46px;border-top:3px solid var(--line);font-size:26px;color:var(--mut);text-align:center;padding-top:8px}
+.token{position:absolute;top:230px;width:150px;margin-left:-75px;text-align:center;font-size:22px;color:var(--yellow);font-family:"Cascadia Mono",Consolas,monospace}
+.token .doc{width:60px;height:74px;margin:0 auto 8px;border:3px solid var(--yellow);border-radius:8px;background:rgba(242,201,76,.12);position:relative}
+.token .doc::before{content:"";position:absolute;left:10px;right:10px;top:16px;height:4px;background:var(--yellow);box-shadow:0 14px 0 var(--yellow),0 28px 0 var(--yellow)}
+.ptrack{position:absolute;left:0;right:0;top:88px;height:4px;background:var(--line)}
+.ptrack i{display:block;height:100%;background:var(--cyan)}
+/* 07 */
+.tree{position:absolute;left:130px;right:130px;top:290px;height:700px}
+.tree svg{position:absolute;inset:0;overflow:visible}
+.tbox{position:absolute;width:500px;margin-left:-250px;font-size:30px;line-height:1.3}
+.tbox b{display:block;font-size:40px;margin-bottom:8px}
+.reuse{position:absolute;left:0;right:0;text-align:center;top:640px;font-size:32px}
+/* 08 */
+.matrix{flex:1;font-size:32px}
+.matrix table{border-collapse:collapse;width:100%;margin-top:18px}
+.matrix td,.matrix th{padding:18px 16px;border-bottom:2px solid var(--line);text-align:left}
+.matrix th{color:var(--mut);font-weight:400;font-size:26px}
+.matrix td.v{text-align:center;font-size:44px;font-weight:800}
+.shields{flex:1;position:relative}
+.shield{position:absolute;top:120px;width:230px;height:290px;margin-left:-115px;border-radius:24px 24px 115px 115px;border:3px solid var(--cyan);
+  background:linear-gradient(180deg,var(--cyan-soft),transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:30px;font-weight:700;padding:0 14px}
+.shield small{font-size:22px;color:var(--mut);font-weight:400;margin-top:8px}
+.chip{position:absolute;top:240px;transform:translate(-50%,-50%);font-size:24px;padding:12px 18px;border-radius:12px;border:2px solid var(--red);color:var(--red);background:#2a1619;white-space:nowrap;font-family:"Cascadia Mono",Consolas,monospace}
+.hit{position:absolute;top:470px;transform:translateX(-50%);font-size:26px;color:var(--red);font-weight:700;text-align:center;white-space:nowrap}
+/* 09 */
+.tl{position:absolute;left:220px;right:220px;top:520px}
+.tl .track{height:10px;border-radius:5px;background:var(--line)}
+.tl .fill{height:10px;border-radius:5px;background:var(--cyan);width:0}
+.mk{position:absolute;top:-22px;width:54px;height:54px;margin-left:-27px;border-radius:50%;background:var(--panel2);border:4px solid var(--line)}
+.mk.on{background:var(--cyan);border-color:var(--cyan)}
+.mkl{position:absolute;top:60px;width:330px;margin-left:-165px;text-align:center}
+.mkl .tm{font-size:58px;font-weight:800;color:var(--cyan)}
+.mkl .ds{font-size:30px;margin-top:6px;line-height:1.25}
+.note{position:absolute;left:220px;right:220px;top:860px;font-size:32px;color:var(--mut);text-align:center}
+/* terminal */
+.termwrap{position:absolute;left:90px;right:90px;top:200px;bottom:44px}
+.termlabel{position:absolute;left:0;top:-52px;font-size:26px;color:var(--mut)}
+.termlabel b{color:var(--red);margin-right:10px}
+.term{position:absolute;inset:0;background:#0c0c0c;border:2px solid #333b44;border-radius:16px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.term .bar{height:52px;background:#1f2329;display:flex;align-items:center;padding:0 22px;gap:12px;font-size:22px;color:#aab3bc}
+.term .bar i{width:15px;height:15px;border-radius:50%;background:#3b434c;display:inline-block}
+.term pre{padding:26px 36px;font-family:"Cascadia Mono","Cascadia Code",Consolas,monospace;font-size:27px;line-height:1.42;color:#e6e6e6;white-space:pre}
+.t-b{font-weight:700}.t-d{color:#7d858d}.t-c{color:#61d6d6;font-weight:700}.t-g{color:#5fd068;font-weight:700}.t-r{color:#f0717b;font-weight:700}.t-y{color:#e5c07b;font-weight:700}
+.speed{position:absolute;right:24px;top:70px;font-size:24px;color:var(--yellow);background:rgba(242,201,76,.1);border:2px solid rgba(242,201,76,.5);padding:8px 16px;border-radius:10px;display:none}
+/* grabación real */
+#foot .flabel{position:absolute;left:120px;top:104px;font-size:27px;color:var(--fg);white-space:nowrap}
+#foot .flabel b{color:var(--red);margin-right:12px}
+#foot .fbox{position:absolute;left:118px;top:148px;width:1684px;height:918px;border:2px solid #333b44;border-radius:6px;background:#0c0c0c}
+/* 17 */
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+.col{padding:38px 36px;min-height:560px}
+.col h3{font-size:44px;margin-bottom:26px}
+.col li{list-style:none;font-size:33px;line-height:1.35;margin-bottom:22px;padding-left:44px;position:relative}
+.col li::before{content:"✔";position:absolute;left:0;color:var(--green);font-weight:800}
+/* 18 */
+.final h1{font-size:96px}
+.next{margin-top:80px;font-size:36px;color:var(--mut)}
+.end{position:absolute;left:130px;bottom:110px;font-size:30px;color:var(--mut)}
+</style></head>
+<body>
+<div id="stage">
+  <div id="chapter"></div><div id="brand">ParkGlobal · Proyecto 2 · ARTI-4219</div>
+
+  <!-- 01 · Apertura -->
+  <section class="scene" data-seg="01">
+    <div class="kicker" data-in="0">ARTI-4219 · Arquitectura de Plataformas · Proyecto 2</div>
+    <h1 data-in="0.02">Golden Path de eventos<br><span class="c">para ParkGlobal</span></h1>
+    <div class="row cards2">
+      <div class="box pcard" data-in="0.12" data-dim="0.52"><div class="tag">Parte 1</div><div class="pt">Pedir una base de datos en autoservicio</div><code>DatabaseClaim</code></div>
+      <div class="arrow" data-in="0.48">→</div>
+      <div class="box acc pcard" data-in="0.5"><div class="tag">Parte 2</div><div class="pt"><b>Publicar eventos de estado gobernados</b>, en autoservicio</div><code>EventStreamClaim</code></div>
+    </div>
+  </section>
+
+  <!-- 02 · Problema -->
+  <section class="scene" data-seg="02">
+    <h2 data-in="0">El punto de partida: <span class="r">Kafka sin contratos</span></h2>
+    <div class="stats">
+      <div class="box stat" data-in="0.22"><div class="n">0</div><div class="t">esquemas registrados</div></div>
+      <div class="box stat" data-in="0.36"><div class="n">1 <span style="font-size:70px">de</span> 20</div><div class="t">tópicos de Zonas compactado</div></div>
+      <div class="box stat" data-in="0.52"><div class="n">2 <span style="font-size:70px">de</span> 42</div><div class="t">servicios declaran sus eventos</div></div>
+    </div>
+    <div class="q" data-in="0.7">¿Quién consume qué? ¿Este cambio rompe a otro equipo?</div>
+  </section>
+
+  <!-- 03 · Caso Tarifas (hoy) -->
+  <section class="scene" data-seg="03">
+    <h2 data-in="0" style="margin-bottom:0">Hoy: el evento solo <span class="y">avisa</span></h2>
+    <div class="diag" id="d03"></div>
+  </section>
+
+  <!-- 04 · Solución -->
+  <section class="scene" data-seg="04">
+    <h2 data-in="0" style="margin-bottom:0">Event-Carried State Transfer: <span class="c">el evento lleva el estado</span></h2>
+    <div class="diag" id="d04"></div>
+    <div class="box acc overlay" id="o04">
+      <div class="tag">La segunda idea</div>
+      <div class="big">Convertirlo en un <span class="c">producto de la plataforma</span></div>
+      <div class="sub">Cualquier equipo publica un stream de estado sin ser experto en Kafka.</div>
+      <div class="chips"><span class="pill" data-in="0.66">Tarifas</span><span class="pill" data-in="0.7">Zonas</span><span class="pill" data-in="0.74">Consumidor C</span><span class="pill" data-in="0.78">Parking Core</span><span class="pill m" data-in="0.82">…</span></div>
+    </div>
+  </section>
+
+  <!-- 05 · Lo que declara el equipo -->
+  <section class="scene" data-seg="05">
+    <h2 data-in="0">El equipo declara <span class="c">qué</span> quiere publicar</h2>
+    <div class="row">
+      <div class="box yaml mono" data-in="0.06">
+        <div class="cm"># streams/tarifas/parking-rule-state/eventstreamclaim.yaml</div>
+        <div><span class="k">kind:</span> EventStreamClaim</div>
+        <div><span class="k">spec:</span></div>
+        <div data-hl="0.27,0.32">  <span class="k">owner:</span> { team: tarifas, costCenter: CC-PRC-01 }</div>
+        <div data-hl="0.32,0.36">  <span class="k">domain:</span> pricing</div>
+        <div data-hl="0.36,0.40">  <span class="k">entity:</span> parking-rule</div>
+        <div data-hl="0.40,0.44">  <span class="k">key:</span> { format: "&lt;countryCode&gt;:&lt;ruleNo&gt;" }</div>
+        <div>  <span class="k">environment:</span> dev</div>
+        <div data-hl="0.44,0.50">  <span class="k">consumers:</span> [ { team: zonas } ]</div>
+        <div data-hl="0.50,0.58">  <span class="k">contract:</span> { format: avro, version: 1 }</div>
+        <div class="cm">  # + schemas/v1.avsc (contrato Avro)</div>
+      </div>
+      <div class="side">
+        <div class="box badge" data-in="0.6">7 campos obligatorios<br>+ 1 archivo de contrato</div>
+        <div class="box" data-in="0.72"><div class="tag">Ya no decide</div>
+          <div class="nolist"><div data-strike="0.77">particiones</div><br><div data-strike="0.82">retención</div><br><div data-strike="0.87">compatibilidad</div><br><div data-strike="0.92">serializadores</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · El camino -->
+  <section class="scene" data-seg="06">
+    <h2 data-in="0">El camino: de un pull request al clúster</h2>
+    <div class="pipe" id="pipe">
+      <div class="group" style="left:0;width:48%">GitHub</div>
+      <div class="group" style="left:52%;width:48%">Clúster</div>
+      <div class="ptrack"><i id="ptrackfill"></i></div>
+    </div>
+  </section>
+
+  <!-- 07 · Lo que crea la plataforma -->
+  <section class="scene" data-seg="07">
+    <h2 data-in="0">Lo que crea la plataforma por el equipo</h2>
+    <div class="tree" id="tree">
+      <svg id="treesvg" width="1660" height="700"></svg>
+      <div class="box acc tbox" style="left:50%;top:0;width:420px;margin-left:-210px;text-align:center" data-in="0"><b style="margin:0">Crossplane</b></div>
+      <div class="box tbox" style="left:16%;top:250px" data-in="0.1"><b>Kafka · Strimzi</b>Tópico <span class="c">compactado</span>: el último estado de cada clave</div>
+      <div class="box tbox" style="left:50%;top:250px" data-in="0.3"><b>Apicurio Registry</b>Contrato Avro con compatibilidad <span class="c">total y transitiva</span></div>
+      <div class="box tbox" style="left:84%;top:250px" data-in="0.52"><b>Configuración</b>Conexión entregada al <span class="c">dueño</span> y a <span class="c">cada consumidor</span></div>
+      <div class="reuse" data-in="0.74">Base de datos del registry <span class="m">←</span> pedida con el <span class="c">DatabaseClaim</span> de la parte 1</div>
+    </div>
+  </section>
+
+  <!-- 08 · Decisiones -->
+  <section class="scene" data-seg="08">
+    <h2 data-in="0">Dos decisiones tomadas con evidencia</h2>
+    <div class="row" style="gap:80px">
+      <div class="matrix" data-in="0.06">
+        <div class="tag">1 · Agregar un campo opcional con FULL_TRANSITIVE</div>
+        <table>
+          <tr><th>Formato</th><th style="text-align:center">Apicurio</th><th style="text-align:center">Karapace</th></tr>
+          <tr data-in="0.12"><td>JSON Schema · modelo cerrado</td><td class="v r">✘</td><td class="v r">✘</td></tr>
+          <tr data-in="0.18"><td>JSON Schema · modelo abierto</td><td class="v r">✘</td><td class="v r">✘</td></tr>
+          <tr data-in="0.26"><td><b>Avro</b> · campo con valor por defecto</td><td class="v g">✔</td><td class="v g">✔</td></tr>
+        </table>
+      </div>
+      <div class="shields" data-in="0.5">
+        <div class="tag">2 · Dos barreras contra los cambios que rompen</div>
+        <div class="shield" style="left:38%">Barrera 1<br>CI<small>chequeo en el pull request</small></div>
+        <div class="shield" style="left:80%">Barrera 2<br>Registry<small>responde 409</small></div>
+        <div class="chip" id="chip1">v2 sin currency</div>
+        <div class="chip" id="chip2">v2 sin currency</div>
+        <div class="hit" id="hit1" style="left:38%">✘ [currency at /fields/6]</div>
+        <div class="hit" id="hit2" style="left:80%">✘ HTTP 409</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 · PR real -->
+  <section class="scene" data-seg="09">
+    <h2 data-in="0">Probado con un pull request real <span class="m" style="font-weight:400">(#6)</span></h2>
+    <div class="tl">
+      <div class="track"><div class="fill" id="tlfill"></div></div>
+    </div>
+    <div class="note" data-in="0.78">Casi todo el tiempo es la espera de Argo CD, que revisa el repositorio cada 3 minutos</div>
+  </section>
+
+  <!-- 10–16 · Demo en vivo (terminal grabada) -->
+  <section class="scene" data-seg="10-16">
+    <div class="termwrap">
+      <div class="termlabel"><b>●</b>Grabación real de <code>docs/p2/video/demo.sh</code> · clúster local (kind)</div>
+      <div class="term"><div class="bar"><i></i><i></i><i></i><span style="margin-left:14px">parkglobal-platform-poc · demo.sh</span></div><pre id="tpre"></pre></div>
+      <div class="speed" id="speed"></div>
+    </div>
+  </section>
+
+  <!-- Grabación real: ffmpeg incrusta el video dentro de .fbox (x=120, y=150, 1680x914) -->
+  <section class="scene" id="foot" data-seg="F"><div class="flabel"><b>●</b><span id="flabel"></span></div><div class="fbox"></div></section>
+
+  <!-- 17 · Beneficios -->
+  <section class="scene" data-seg="17">
+    <h2 data-in="0">En qué beneficia</h2>
+    <div class="cols">
+      <div class="box col" data-in="0.08"><h3 class="c">Equipos</h3><ul>
+        <li data-in="0.12">Publicar un stream: de trabajo manual a un archivo</li>
+        <li data-in="0.2">Sin tickets ni esperas a otro equipo</li></ul></div>
+      <div class="box col" data-in="0.34"><h3 class="c">Consumidores</h3><ul>
+        <li data-in="0.38">0 llamadas de vuelta</li>
+        <li data-in="0.44">Ninguna espera artificial</li>
+        <li data-in="0.5">Siguen operando si el productor cae</li></ul></div>
+      <div class="box col" data-in="0.62"><h3 class="c">Organización</h3><ul>
+        <li data-in="0.66">Contratos versionados</li>
+        <li data-in="0.74">Cambios que rompen, detenidos antes de producción</li>
+        <li data-in="0.86">Reglas que se cumplen solas</li></ul></div>
+    </div>
+  </section>
+
+  <!-- 18 · Cierre -->
+  <section class="scene final" data-seg="18">
+    <h1 data-in="0.02" style="margin-top:120px">El equipo declara <span class="c">qué</span> publica.</h1>
+    <h1 data-in="0.2">La plataforma resuelve <span class="c">el cómo</span>.</h1>
+    <div class="next" data-in="0.62">Siguientes pasos: plantilla en Backstage · autenticación y permisos en el bus de eventos</div>
+    <div class="end" data-in="1.06">Golden Path de eventos · ParkGlobal · ARTI-4219 Arquitectura de Plataformas</div>
+  </section>
+
+  <div class="card" id="card"><div class="num" id="cardnum"></div><div class="tt" id="cardtt"></div></div>
+  <div id="bar"></div>
+</div>
+
+<script>window.__errors = []; addEventListener("error", e => window.__errors.push(e.message));</script>
+<script>
+const DATA = __DATA__;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const lerp = (a, b, p) => a + (b - a) * p;
+const $ = s => document.querySelector(s);
+const PARTS = Object.fromEntries(DATA.cards.map(c => [c.part, c.title]));
+
+/* ---------- bloques de la línea de tiempo ---------- */
+const blocks = [];
+for (const c of DATA.cards) blocks.push({kind: "card", t0: c.start, card: c});
+for (const s of DATA.segs) blocks.push({kind: "seg", t0: s.start - DATA.lead, seg: s});
+blocks.sort((a, b) => a.t0 - b.t0);
+blocks.forEach((b, i) => b.t1 = i + 1 < blocks.length ? blocks[i + 1].t0 : DATA.total);
+const SEG = Object.fromEntries(DATA.segs.map(s => [s.id, s]));
+const scenes = [...document.querySelectorAll(".scene:not(#foot)")].map(el => {
+  const ids = el.dataset.seg.includes("-") ? (([a, b]) => Array.from({length: +b - +a + 1}, (_, k) => String(+a + k).padStart(2, "0")))(el.dataset.seg.split("-")) : [el.dataset.seg];
+  const bs = blocks.filter(b => b.kind === "seg" && b.seg.kind !== "footage" && ids.includes(b.seg.id));
+  if (!bs.length || bs.length !== ids.length) { el.style.display = "none"; return null; }
+  return {el, ids, a: bs[0].t0, b: bs[bs.length - 1].t1};
+}).filter(Boolean);
+// Tramos contiguos de grabación real (sin fundido entre uno y otro)
+const footRuns = [];
+for (const b of blocks) { const f = b.kind === "seg" && b.seg.kind === "footage";
+  if (f && footRuns.length && footRuns[footRuns.length - 1].b === b.t0) footRuns[footRuns.length - 1].b = b.t1;
+  else if (f) footRuns.push({a: b.t0, b: b.t1}); }
+
+/* ---------- diagramas 03 y 04 ---------- */
+function rectEdge(a, b, w = 160, h = 62) {      // punto en el borde del nodo a, hacia b
+  const dx = b.x - a.x, dy = b.y - a.y; const s = 1 / Math.max(Math.abs(dx) / w, Math.abs(dy) / h);
+  return {x: a.x + dx * s, y: a.y + dy * s};
+}
+function makeDiagram(id, nodes, arrows) {
+  const root = document.getElementById(id); const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg"); svg.setAttribute("width", 1920); svg.setAttribute("height", 1080);
+  svg.innerHTML = `<defs>${["g", "r", "c"].map(k => `<marker id="m${id}${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${{g: "#56606b", r: "#f0717b", c: "#4fd1d9"}[k]}"/></marker>`).join("")}</defs>`;
+  root.appendChild(svg);
+  const N = {};
+  for (const n of nodes) {
+    const d = document.createElement("div"); d.className = "node"; d.style.left = n.x + "px"; d.style.top = n.y + "px";
+    d.innerHTML = n.t + (n.s ? `<small>${n.s}</small>` : ""); root.appendChild(d); N[n.id] = {...n, el: d};
+  }
+  const A = {};
+  for (const a of arrows) {
+    const p = rectEdge(N[a.from], N[a.to]), q = rectEdge(N[a.to], N[a.from]);
+    const off = a.off || 0, nx = -(q.y - p.y), ny = q.x - p.x, nl = Math.hypot(nx, ny);
+    const P = {x: p.x + nx / nl * off, y: p.y + ny / nl * off}, Q = {x: q.x + nx / nl * off, y: q.y + ny / nl * off};
+    const l = document.createElementNS(ns, "line");
+    Object.entries({x1: P.x, y1: P.y, x2: Q.x, y2: Q.y, stroke: {g: "#56606b", r: "#f0717b", c: "#4fd1d9"}[a.c || "g"], "stroke-width": a.c === "r" ? 5 : 4,
+      "marker-end": `url(#m${id}${a.c || "g"})`}).forEach(([k, v]) => l.setAttribute(k, v));
+    svg.appendChild(l); const len = Math.hypot(Q.x - P.x, Q.y - P.y); l.style.strokeDasharray = len;
+    let lab = null;
+    if (a.label) { lab = document.createElement("div"); lab.className = "lbl r"; lab.style.fontWeight = 800; lab.style.fontSize = "34px";
+      lab.style.left = (P.x + Q.x) / 2 + nx / nl * 30 + "px"; lab.style.top = (P.y + Q.y) / 2 + ny / nl * 30 + "px"; lab.textContent = a.label; root.appendChild(lab); }
+    A[a.id] = {el: l, len, P, Q, lab};
+  }
+  const pk = (cls) => { const d = document.createElement("div"); d.className = "packet " + cls; root.appendChild(d); return d; };
+  return {root, N, A, pk};
+}
+const draw = (a, p) => { a.el.style.strokeDashoffset = a.len * (1 - p); a.el.style.opacity = p > 0 ? 1 : 0; if (a.lab) a.lab.style.opacity = clamp(p * 3 - 2); };
+const place = (el, a, p) => { el.style.display = p > 0 && p < 1 ? "block" : "none"; el.style.left = lerp(a.P.x, a.Q.x, p) + "px"; el.style.top = lerp(a.P.y, a.Q.y, p) + "px"; };
+const fadeNode = (n, p) => { n.el.style.opacity = p; n.el.style.transform = `scale(${0.92 + 0.08 * p})`; };
+
+const NODES03 = [{id: "T", x: 330, y: 470, t: "Tarifas"}, {id: "K", x: 960, y: 470, t: "Kafka", s: "tópico de avisos"},
+  {id: "Z", x: 1590, y: 340, t: "Zonas"}, {id: "C", x: 1590, y: 650, t: "Consumidor C"},
+  {id: "CO", x: 960, y: 860, t: "Monolito Core", s: "solo enruta"}, {id: "API", x: 330, y: 860, t: "API Tarifas", s: "y su caché"}];
+const D3 = makeDiagram("d03", NODES03, [
+  {id: "tk", from: "T", to: "K"}, {id: "kz", from: "K", to: "Z"}, {id: "kc", from: "K", to: "C"},
+  {id: "r1", from: "Z", to: "CO", c: "r", label: "①"}, {id: "r2", from: "CO", to: "API", c: "r", label: "②"},
+  {id: "r3", from: "C", to: "Z", c: "r", label: "③", off: 40}, {id: "r4", from: "C", to: "API", c: "r", label: "④", off: -18}]);
+const d3pk = [D3.pk(""), D3.pk(""), D3.pk("")];
+d3pk.forEach(p => p.textContent = '{"countryCode":"SE",\n "zoneNo":4021}');
+const d3extra = {};
+D3.root.insertAdjacentHTML("beforeend", `
+  <svg style="position:absolute;left:560px;top:250px;width:160px;height:160px;overflow:visible" id="clock"><circle cx="80" cy="80" r="62" fill="none" stroke="#2b333d" stroke-width="12"/>
+   <circle id="clockarc" cx="80" cy="80" r="62" fill="none" stroke="#f2c94c" stroke-width="12" stroke-linecap="round" transform="rotate(-90 80 80)" stroke-dasharray="389.6" stroke-dashoffset="389.6"/>
+   <text x="80" y="94" text-anchor="middle" font-size="40" font-weight="800" fill="#f2c94c" font-family="Segoe UI">5 s</text></svg>
+  <div class="lbl y" id="clocklbl" style="left:640px;top:430px">espera fija</div>
+  <div class="lbl" id="chg" style="left:330px;top:375px;color:#4fd1d9">precio cambia</div>
+  <div class="callout bad" id="calls" style="left:1180px;top:780px">≥ 4 llamadas síncronas por cambio</div>
+  <div class="callout bad" id="lost" style="left:90px;top:565px">Tarifas caído → cambio perdido</div>`);
+["clock", "clocklbl", "chg", "calls", "lost"].forEach(k => d3extra[k] = document.getElementById(k));
+
+const NODES04 = [{id: "T", x: 330, y: 470, t: "Tarifas", s: "outbox + relay"}, {id: "K", x: 960, y: 470, t: "Kafka", s: "tópico compactado"},
+  {id: "Z", x: 1440, y: 340, t: "Zonas"}, {id: "C", x: 1440, y: 650, t: "Consumidor C"},
+  {id: "CO", x: 960, y: 860, t: "Monolito Core"}, {id: "API", x: 330, y: 860, t: "API Tarifas"}];
+const D4 = makeDiagram("d04", NODES04, [{id: "tk", from: "T", to: "K", c: "c"}, {id: "kz", from: "K", to: "Z", c: "c"}, {id: "kc", from: "K", to: "C", c: "c"}]);
+const d4pk = [D4.pk("full"), D4.pk("full"), D4.pk("full")];
+d4pk.forEach(p => p.textContent = '{ "zoneKey": "SE:4021",\n  "version": 17,\n  "currency": "SEK",\n  "maxDailyPriceMinor": 12000,\n  "parkingFree": false, … }');
+D4.root.insertAdjacentHTML("beforeend", `
+  <div class="db" id="dbz" style="left:1720px;top:340px"><div class="cyl"></div>copia local</div>
+  <div class="db" id="dbc" style="left:1720px;top:650px"><div class="cyl"></div>copia local</div>
+  <div class="callout good" id="zero" style="left:640px;top:740px">0 llamadas de vuelta</div>`);
+
+/* ---------- pipeline 06 ---------- */
+const PIPE = [["Pull request", "el archivo entra a Git", 0.03], ["Integración continua", "políticas + registry temporal", 0.14], ["Auto-merge", "sin revisión humana", 0.42],
+  ["Argo CD", "sincroniza con el clúster", 0.6], ["Kyverno", "valida al crear", 0.74], ["Crossplane", "hace el trabajo pesado", 0.87]];
+const pipe = $("#pipe"); const pX = i => 125 + i * (1700 - 250) / 5;
+PIPE.forEach(([t, s], i) => pipe.insertAdjacentHTML("beforeend", `<div class="pnode" id="pn${i}" style="left:${pX(i)}px">${t}<small>${s}</small></div>`));
+pipe.insertAdjacentHTML("beforeend", `<div class="token" id="tok"><div class="doc"></div>EventStreamClaim</div>`);
+
+/* ---------- árbol 07 ---------- */
+(function () {
+  const svg = $("#treesvg"); const W = 1660; const x0 = W / 2, y0 = 92;
+  [0.16, 0.5, 0.84].forEach((fx, i) => { const l = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    l.setAttribute("d", `M${x0},${y0} C${x0},170 ${fx * W},170 ${fx * W},250`); l.setAttribute("fill", "none"); l.setAttribute("stroke", "#4fd1d9"); l.setAttribute("stroke-width", 4);
+    l.id = "tr" + i; svg.appendChild(l); });
+})();
+
+/* ---------- línea de tiempo 09 ---------- */
+const MK = [["0 s", "PR abierto", 0.12], ["26 s", "CI en verde", 0.3], ["31 s", "Integrado solo", 0.44], ["2 min 34 s", "Stream listo en el clúster", 0.6]];
+const tl = $(".tl");
+MK.forEach(([tm, ds], i) => { const x = (i / 3) * 100;
+  tl.insertAdjacentHTML("beforeend", `<div class="mk" id="mk${i}" style="left:${x}%"></div><div class="mkl" id="mkl${i}" style="left:${x}%"><div class="tm">${tm}</div><div class="ds">${ds}</div></div>`); });
+
+/* ---------- terminal ---------- */
+const SGR = {"0": null, "1": "t-b", "2": "t-d", "1;36": "t-c", "1;32": "t-g", "1;31": "t-r", "1;33": "t-y"};
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function termHTML(text) {
+  let out = "", cls = null, open = false;
+  const parts = text.replace(/\r/g, "").split(/(\x1b\[[0-9;]*m)/);
+  for (const p of parts) {
+    const m = p.match(/^\x1b\[([0-9;]*)m$/);
+    if (m) { if (open) { out += "</span>"; open = false; } cls = SGR[m[1]] ?? null; if (cls) { out += `<span class="${cls}">`; open = true; } continue; }
+    out += esc(p.replace(/\x1b\[[0-9;]*[A-Za-z]/g, ""));
+  }
+  return out + (open ? "</span>" : "");
+}
+let lastTerm = "";
+function renderTerm(t) {
+  const blk = blocks.filter(b => b.kind === "seg" && +b.seg.id >= 10 && +b.seg.id <= 16 && b.t0 <= t).pop();
+  const k = blk ? +blk.seg.id - 10 : 0; const scr = DATA.term[k];
+  const L = blk ? t - blk.t0 : 0;
+  const budget = Math.max(0.5, 0.78 * (blk ? blk.seg.dur : 1));
+  const speed = Math.max(1, scr.D / budget);
+  const rt = L * speed;
+  let txt = ""; for (const [r, s] of scr.events) { if (r <= rt) txt += s; else break; }
+  const key = k + ":" + txt.length;
+  if (key !== lastTerm) { $("#tpre").innerHTML = termHTML(txt); lastTerm = key; }
+  const sp = $("#speed");
+  if (speed > 1.15 && rt < scr.D) { sp.style.display = "block"; sp.textContent = `⏩ esperas reales acortadas ×${speed.toFixed(1).replace(".", ",")}`; }
+  else sp.style.display = "none";
+}
+
+/* ---------- ganchos por escena (tiempo local en segundos desde que empieza la voz) ---------- */
+const F = (s, d, a, b) => ease(clamp((s / d - a) / (b - a)));      // progreso entre las fracciones a y b
+const HOOKS = {
+  "03"(s, d) {
+    const ns = ["T", "K", "Z", "C", "CO", "API"]; ns.forEach((n, i) => fadeNode(D3.N[n], F(s, d, -0.05 + i * 0.02, 0.03 + i * 0.02)));
+    D3.N.T.el.classList.toggle("hot", s / d > 0.06 && s / d < 0.42); d3extra.chg.style.opacity = F(s, d, 0.06, 0.1) * (1 - F(s, d, 0.4, 0.44));
+    const ck = F(s, d, 0.18, 0.2) * (1 - F(s, d, 0.42, 0.45)); d3extra.clock.style.opacity = ck; d3extra.clocklbl.style.opacity = ck;
+    $("#clockarc").style.strokeDashoffset = 389.6 * (1 - clamp((s / d - 0.2) / 0.2));
+    draw(D3.A.tk, F(s, d, 0.0, 0.06)); draw(D3.A.kz, F(s, d, 0.02, 0.08)); draw(D3.A.kc, F(s, d, 0.02, 0.08));
+    place(d3pk[0], D3.A.tk, clamp((s / d - 0.43) / 0.05)); place(d3pk[1], D3.A.kz, clamp((s / d - 0.48) / 0.06)); place(d3pk[2], D3.A.kc, clamp((s / d - 0.48) / 0.06));
+    ["r1", "r2", "r3", "r4"].forEach((r, i) => draw(D3.A[r], F(s, d, 0.56 + i * 0.05, 0.6 + i * 0.05)));
+    d3extra.calls.style.opacity = F(s, d, 0.74, 0.78);
+    const down = s / d > 0.82; D3.N.T.el.classList.toggle("bad", down);
+    d3extra.lost.style.opacity = F(s, d, 0.84, 0.88);
+  },
+  "04"(s, d) {
+    ["T", "K", "Z", "C"].forEach(n => fadeNode(D4.N[n], 1)); ["CO", "API"].forEach(n => { D4.N[n].el.style.opacity = 0.22; });
+    ["tk", "kz", "kc"].forEach(a => draw(D4.A[a], F(s, d, 0.04, 0.1)));
+    place(d4pk[0], D4.A.tk, clamp((s / d - 0.13) / 0.08)); place(d4pk[1], D4.A.kz, clamp((s / d - 0.21) / 0.09)); place(d4pk[2], D4.A.kc, clamp((s / d - 0.21) / 0.09));
+    const got = F(s, d, 0.3, 0.34); ["dbz", "dbc"].forEach(k => document.getElementById(k).style.opacity = got);
+    D4.N.Z.el.classList.toggle("good", s / d > 0.3); D4.N.C.el.classList.toggle("good", s / d > 0.3);
+    $("#zero").style.opacity = F(s, d, 0.36, 0.4);
+    const ov = F(s, d, 0.55, 0.6); D4.root.style.opacity = 1 - 0.8 * ov; $("#o04").style.opacity = ov; $("#o04").style.transform = `translateY(${(1 - ov) * 30}px)`;
+  },
+  "06"(s, d) {
+    const u = s / d; let x = pX(0), lit = -1;
+    for (let i = 0; i < PIPE.length; i++) {
+      const a = PIPE[i][2];
+      if (u >= a) lit = i;
+      if (i > 0) { const a0 = PIPE[i - 1][2]; const p = ease(clamp((u - (a - 0.05)) / 0.05)); if (u >= a0) x = lerp(pX(i - 1), pX(i), p); }
+    }
+    PIPE.forEach((_, i) => { const el = document.getElementById("pn" + i); el.classList.toggle("on", i <= lit); el.style.opacity = F(s, d, -0.02 + i * 0.015, 0.03 + i * 0.015); });
+    const tok = $("#tok"); tok.style.left = x + "px"; tok.style.opacity = F(s, d, 0, 0.04);
+    $("#ptrackfill").style.width = ((x - pX(0)) / (pX(5) - pX(0)) * 100) + "%";
+  },
+  "07"(s, d) {
+    [0.08, 0.28, 0.5].forEach((a, i) => { const l = document.getElementById("tr" + i); const len = l.getTotalLength(); const p = F(s, d, a, a + 0.06);
+      l.style.strokeDasharray = len; l.style.strokeDashoffset = len * (1 - p); });
+  },
+  "08"(s, d) {
+    const u = s / d, W = $(".shields").clientWidth, sx1 = 0.38 * W, sx2 = 0.8 * W;
+    const c1 = $("#chip1"), c2 = $("#chip2");
+    // Barrera 1: choca y rebota
+    const a1 = clamp((u - 0.6) / 0.06), b1 = clamp((u - 0.66) / 0.05);
+    c1.style.display = u > 0.6 && u < 0.8 ? "block" : "none"; c1.style.left = (u < 0.66 ? lerp(110, sx1 - 200, ease(a1)) : lerp(sx1 - 200, 110, ease(b1))) + "px";
+    c1.style.opacity = 1 - clamp((u - 0.74) / 0.05);
+    $("#hit1").style.opacity = F(s, d, 0.66, 0.69);
+    // Barrera 2: salta la primera y choca con el registry
+    const a2 = clamp((u - 0.79) / 0.09);
+    c2.style.display = u > 0.79 && u < 1.2 ? "block" : "none";
+    c2.style.left = lerp(110, sx2 - 200, ease(a2)) + "px"; c2.style.top = (240 - Math.sin(Math.PI * clamp(a2 * 1.25)) * 230) + "px";
+    $("#hit2").style.opacity = F(s, d, 0.88, 0.91);
+  },
+  "09"(s, d) {
+    const u = s / d; let w = 0;
+    MK.forEach(([, , a], i) => { const on = u >= a; document.getElementById("mk" + i).classList.toggle("on", on);
+      const p = F(s, d, a, a + 0.03); const lab = document.getElementById("mkl" + i); lab.style.opacity = p; lab.style.transform = `translateY(${(1 - p) * 20}px)`;
+      if (i > 0) { const a0 = MK[i - 1][2]; w = u >= a0 ? lerp((i - 1) / 3, i / 3, ease(clamp((u - a0) / (a - a0)))) * 100 : w; } });
+    $("#tlfill").style.width = w + "%";
+  },
+};
+
+/* ---------- seek: dibuja el instante t (determinista) ---------- */
+function applyDeclarative(scene, s, d) {
+  for (const el of scene.querySelectorAll("[data-in],[data-dim]")) {
+    const fin = el.dataset.in !== undefined ? ease(clamp((s - +el.dataset.in * d) / 0.55)) : 1;
+    const fdim = el.dataset.dim !== undefined ? clamp((s - +el.dataset.dim * d) / 0.5) : 0;
+    el.style.opacity = fin * (1 - 0.65 * fdim);
+    if (el.dataset.in !== undefined) el.style.transform = `translateY(${(1 - fin) * 26}px)`;
+  }
+  for (const el of scene.querySelectorAll("[data-hl]")) { const [a, b] = el.dataset.hl.split(",").map(Number); el.classList.toggle("hl", s >= a * d && s < b * d); el.classList.toggle("done", s >= b * d); }
+  for (const el of scene.querySelectorAll("[data-strike]")) el.classList.toggle("struck", s >= +el.dataset.strike * d);
+}
+function seek(t) {
+  const blk = blocks.filter(b => b.t0 <= t).pop();
+  // escenas
+  for (const sc of scenes) {
+    const alpha = clamp((t - sc.a) / 0.4) * clamp((sc.b - t) / 0.35);
+    if (alpha <= 0) { sc.el.style.display = "none"; continue; }
+    sc.el.style.display = "block"; sc.el.style.opacity = alpha;
+    if (sc.ids.length > 1) { renderTerm(t); continue; }
+    const seg = SEG[sc.ids[0]]; const s = t - seg.start;
+    applyDeclarative(sc.el, s, seg.dur);
+    if (HOOKS[seg.id]) HOOKS[seg.id](s, seg.dur);
+  }
+  // marco de grabación real
+  const foot = $("#foot"), run = footRuns.find(r => t >= r.a && t < r.b);
+  if (run && blk && blk.kind === "seg" && blk.seg.kind === "footage") {
+    foot.style.display = "block"; foot.style.opacity = clamp((t - run.a) / 0.4) * clamp((run.b - t) / 0.35);
+    $("#flabel").textContent = blk.seg.label || "";
+  } else foot.style.display = "none";
+  // tarjeta de capítulo
+  const card = $("#card");
+  if (blk && blk.kind === "card") {
+    const c = blk.card, p = clamp((t - c.start) / 0.35) * clamp((c.start + c.dur - t) / 0.3);
+    card.style.display = "flex"; card.style.opacity = p;
+    $("#cardnum").textContent = c.part; $("#cardtt").textContent = c.title;
+    $("#cardtt").style.transform = `translateY(${(1 - ease(clamp((t - c.start) / 0.6))) * 30}px)`;
+  } else card.style.display = "none";
+  // cabecera y progreso
+  const part = blk ? (blk.kind === "card" ? blk.card.part : blk.seg.part) : 1;
+  $("#chapter").innerHTML = `<b>${part}</b>${PARTS[part]}`;
+  $("#chapter").style.opacity = blk && blk.kind === "seg" ? 1 : 0;
+  $("#brand").style.opacity = blk && blk.kind === "seg" ? 1 : 0;
+  $("#bar").style.width = (t / DATA.total * 100) + "%";
+}
+window.seek = seek; window.DURATION = DATA.total;
+
+/* ---------- vista previa en el navegador: #play (tiempo real) o #t=SEGUNDOS ---------- */
+function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); $("#stage").style.transform = `scale(${s})`; }
+addEventListener("resize", fit); fit();
+document.fonts.ready.then(() => {
+  window.READY = true;
+  const h = location.hash;
+  if (h.startsWith("#t=")) seek(parseFloat(h.slice(3)));
+  else if (h === "#play") { const t0 = performance.now(); const loop = () => { const t = (performance.now() - t0) / 1000; seek(t); if (t < DATA.total) requestAnimationFrame(loop); }; loop(); }
+  else seek(0);
+});
+</script>
+</body></html>

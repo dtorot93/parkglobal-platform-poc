@@ -1,0 +1,23 @@
+# Narración de la GRABACIÓN REAL (PR #7 en vivo). Misma voz que los audios 01–18.
+# Pegar en ElevenLabs SOLO el texto de cada bloque y guardar como NN.mp3 en voz/ (20.mp3 … 26.mp3).
+
+[20] El equipo declara su stream
+Así se ve en la realidad. El equipo de Zonas quiere publicar el estado de cada ciudad. Lo declara en un solo archivo: dueño, dominio, entidad, clave, quiénes lo consumen y el contrato en Avro. No elige particiones, ni retención, ni serializadores.
+
+[21] Push y pull request
+Lo publica como cualquier cambio de código: crea una rama, hace commit y la sube a GitHub. Después abre el pull request desde el navegador. Este es el único paso manual de todo el proceso; desde aquí, la plataforma se encarga del resto.
+
+[22] La integración continua
+En cuanto se abre el pull request, la integración continua arranca sola. Comprueba que el cambio solo toque la carpeta de streams, corre las pruebas de las políticas, aplica Kyverno al nuevo claim y prueba el contrato contra un registro de esquemas temporal. Todo pasa en veintiséis segundos, y enseguida arranca el auto-merge.
+
+[23] Auto-merge
+Como todo cumple, el pull request se integra solo. Lo integró el bot de GitHub Actions, sin revisión humana: la política reemplazó al ticket.
+
+[24] Argo CD
+Ahora Argo CD. Revisa el repositorio de forma periódica; esta vez tardó cerca de dos minutos en detectar el cambio, y aquí se muestra acelerado. Aparece la aplicación del nuevo stream y, en segundos, Crossplane compone todo: el tópico de Kafka, el Job que registra el contrato y la configuración para el Consumidor C. Todo queda sincronizado y sano.
+
+[25] Lo que quedó en el clúster
+En el clúster, el stream de ciudades ya está listo, junto a los demás. El tópico se creó compactado, con tres particiones. Y el Consumidor C recibió su configuración en su propio namespace: el tópico, el subject y la dirección del registro de esquemas, con el autorregistro desactivado. No tuvo que pedírsela a nadie.
+
+[26] El contrato en el registro
+Y en el registro de esquemas está el contrato, versión uno, con sus metadatos de gobierno: dueño, dominio, centro de costo, consumidores y si contiene datos personales. Cualquiera puede ver quién publica qué, y quién lo consume.

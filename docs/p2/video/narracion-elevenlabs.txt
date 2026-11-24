@@ -1,0 +1,55 @@
+# Un bloque por audio. Pegar en ElevenLabs SOLO el texto (sin la línea [NN] ...) y guardar como NN.mp3
+
+[01] Apertura
+En la primera parte del proyecto, ParkGlobal estrenó su plataforma interna con un primer camino dorado: pedir una base de datos en autoservicio. En esta segunda parte, la plataforma crece con una nueva capacidad: publicar eventos de estado gobernados, también en autoservicio.
+
+[02] El problema
+El punto de partida era un Kafka sin contratos. No había ningún esquema registrado, solo uno de veinte tópicos del dominio de Zonas estaba compactado, y apenas dos de cuarenta y dos servicios declaraban sus eventos. Nadie sabía con certeza quién consumía qué, ni si un cambio iba a romper a otro equipo.
+
+[03] El caso de Tarifas
+Un ejemplo concreto. Cuando Tarifas cambia un precio, solo publica un aviso de que algo cambió, y lo hace después de esperar cinco segundos fijos. Para conocer el precio nuevo, Zonas y el Consumidor C tienen que llamar de vuelta: cuatro o más llamadas síncronas por cada cambio. Y si Tarifas está caído, el cambio simplemente se pierde.
+
+[04] La solución
+La solución combina dos ideas. La primera es un patrón llamado Event-Carried State Transfer: el evento ya no avisa, sino que lleva el estado completo de la tarifa. Cada consumidor guarda su propia copia local y deja de llamar de vuelta. La segunda es convertir eso en un producto de la plataforma, para que cualquier equipo pueda publicar un stream así sin ser experto en Kafka.
+
+[05] Lo que declara el equipo
+El equipo solo declara qué quiere publicar, en un recurso llamado EventStreamClaim: el dueño, el dominio, la entidad, la clave, quiénes lo consumen y el contrato de datos en formato Avro. Son siete campos obligatorios y un archivo de contrato. No elige particiones, ni retención, ni compatibilidad, ni serializadores.
+
+[06] El camino
+Ese archivo entra por un pull request. La integración continua valida las políticas y prueba el contrato contra un registro de esquemas temporal. Si todo cumple, el cambio se integra solo, sin revisión humana. Después, Argo CD lo sincroniza con el clúster, Kyverno vuelve a validar las reglas al momento de crearlo, y Crossplane hace el trabajo pesado.
+
+[07] Lo que crea la plataforma
+Crossplane crea tres cosas por el equipo: un tópico compactado en Kafka, con Strimzi; el contrato registrado en Apicurio, con compatibilidad total y transitiva; y la configuración de conexión, que se entrega al dueño y a cada consumidor. Incluso la base de datos del registro de esquemas se pidió con el camino dorado de la primera parte.
+
+[08] Dos decisiones con evidencia
+Dos decisiones se tomaron con evidencia. Primero, Avro en lugar de JSON Schema: en las pruebas, JSON Schema con esta política no permitía agregar ni un campo opcional. Segundo, dos barreras contra los cambios que rompen: una en la integración continua y otra en el propio registro de esquemas, por si alguien se salta la primera.
+
+[09] Probado con un pull request real
+Todo esto se probó con un pull request real. La integración continua pasó en veintiséis segundos, el cambio se integró solo a los treinta y un segundos, y el stream quedó listo en el clúster dos minutos y medio después de abrir el pull request. Casi todo ese tiempo es la espera de Argo CD revisando el repositorio.
+
+[10] Transición
+Ahora veamos la plataforma funcionando, en vivo, sobre un clúster local.
+
+[11] Autoservicio
+Primero se crea un stream nuevo desde cero. En segundos, la plataforma deja listos el tópico, el contrato y la configuración de los consumidores. El equipo no abrió ningún ticket ni esperó a otro equipo.
+
+[12] Límites
+El autoservicio tiene límites. Si un equipo intenta publicar en el dominio de otro, o declara datos personales, Kyverno lo rechaza y explica por qué. Las reglas son código, no una revisión manual.
+
+[13] El evento trae el estado
+Ahora Tarifas cambia un precio. Zonas y el Consumidor C lo reciben en milisegundos y lo guardan en su copia local. El Consumidor C arma por su cuenta la jerarquía de ciudad, zonas y tarifa. Las llamadas de vuelta a Tarifas pasan de cuatro o más a cero.
+
+[14] Disponibilidad
+Ahora apagamos Tarifas por completo. Los consumidores siguen respondiendo con el último precio y siguen tomando decisiones, porque ya no dependen de que el productor esté disponible.
+
+[15] Un cambio que rompe
+¿Y si alguien borra un campo que otros equipos usan? La validación de la integración continua lo rechaza y señala el campo exacto. Si alguien se la salta y va directo al registro, recibe un error cuatrocientos nueve. La versión rota no se registra.
+
+[16] Evolucionar sin romper
+Gobernar no significa congelar. Un campo nuevo y opcional se acepta en segundos. Un productor escribe con la versión dos, y un consumidor que todavía usa la versión uno sigue leyendo el mismo mensaje, sin cambiar nada.
+
+[17] Beneficios
+En resumen, los beneficios. Para los equipos: publicar un stream deja de ser un trabajo manual y pasa a ser un archivo que la plataforma resuelve sola. Para los consumidores: cero llamadas de vuelta, ninguna espera artificial, y siguen operando aunque el productor se caiga. Para la organización: contratos versionados, cambios que rompen detenidos antes de llegar a producción, y reglas que se cumplen solas.
+
+[18] Cierre
+La idea de fondo es reducir la carga cognitiva de los desarrolladores: el equipo declara qué publica, y la plataforma resuelve el cómo. Como siguientes pasos, quedan probar la plantilla en Backstage y agregar autenticación y permisos al bus de eventos.

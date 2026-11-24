@@ -1,0 +1,99 @@
+Script started on 2026-11-23 21:18:02-05:00 [COMMAND="stty cols 110 rows 30; AUTO=2 docs/p2/video/demo.sh" <not executed on terminal>]
+Comprobando el entorno...
+[H[2J[3J
+
+  [1;36mParkGlobal · Proyecto 2[0m
+  [1mGolden Path de eventos: demostración en vivo[0m
+
+[2m[Enter][0m[H[2J[3J[1;36m1/6  Autoservicio: el equipo declara, la plataforma construye[0m
+[2mStream nuevo, creado en este momento[0m
+
+spec:
+  owner: {team: tarifas, costCenter: CC-PRC-01}
+  domain: pricing
+  entity: parking-rule-211814
+  environment: dev
+  key: {format: "<countryCode>:<zoneNo>", pattern: "^[A-Z]{2}:[0-9]+$"}
+  contract: {version: 1}
+  governance: {pii: false}
+  consumers: [{team: zonas}, {team: consumidor-c}]
+
+[1;33m$ kubectl apply -k <claim + contrato Avro>[0m
+[1;32m✔ Configuración         entregada a Tarifas, Zonas y Consumidor C  (1,3 s)[0m
+[1;32m✔ Tópico compactado     pricing.state.parking-rule-211814.v1  (4,6 s)[0m
+[1;32m✔ Contrato registrado   v1 · FULL_TRANSITIVE  (7,7 s)[0m
+[1;32m✔ Claim Ready           verificado por la plataforma  (32,7 s)[0m
+
+[2m[Enter][0m[H[2J[3J[1;36m2/6  Guardrails: Kyverno rechaza lo que no cumple[0m
+[2mSe envían dos solicitudes inválidas al clúster[0m
+
+[1;33m$ kubectl apply --dry-run=server -f tests/fixtures/invalid-stream-domain.yaml[0m
+[1;31mRECHAZADO[0m
+  El dominio pricing no pertenece al equipo zonas. Cada dominio tiene un único escritor: publique en su 
+  propio dominio o consuma el stream del dueño.
+
+[1;33m$ kubectl apply --dry-run=server -f tests/fixtures/invalid-stream-pii.yaml[0m
+[1;31mRECHAZADO[0m
+  El stream stream-with-pii declara datos personales (governance.pii=true). La TVP no los admite: 
+  publique solo identificadores no personales o abra un caso atípico con el Platform Team (fase 2: 
+  tokenización).
+
+[1;32m✔ Un equipo no declara streams de otro dominio ni con datos personales[0m
+
+[2m[Enter][0m[H[2J[3J[1;36m3/6  ECST: el evento trae el estado completo[0m
+[2mTarifas cambia el precio de la zona SE:4021[0m
+
+[1;33m$ PUT tarifas/tariffs/SE:4021 {"maxDailyPriceMinor": 17903}[0m
+
+Consumidor C arma Ciudad > Zonas > Tarifa con su copia local:
+  Stockholm
+    SE:4021  Södermalm Norte  precio=17903  decisión=APARCAMIENTO_MAS_CARGA
+    SE:4022  Södermalm Sur  precio=10196  decisión=SOLO_CARGA
+
+[1;32m✔ Zonas          recibió el precio 17903 en 173 ms[0m
+[1;32m✔ Consumidor C   recibió el precio 17903 en 176 ms[0m
+[1;32m✔ Llamadas de vuelta a la API de Tarifas: 0   (diagnóstico actual: 4 o más)[0m
+
+[2m[Enter][0m[H[2J[3J[1;36m4/6  Disponibilidad: apagamos Tarifas[0m
+[2mLos consumidores responden con su copia local[0m
+
+[1;33m$ kubectl -n team-tarifas scale deploy/tarifas --replicas=0[0m
+[1;31mTarifas: 0 réplicas atendiendo[0m
+
+[1;33m$ GET zonas/zones/SE:4021[0m
+  precio=17903 SEK  versión=45
+[1;33m$ GET consumidor-c/cities/SE-STO[0m
+  precio=17903 SEK  decisión=APARCAMIENTO_MAS_CARGA
+
+[1;32m✔ Los dos consumidores siguen operando sin el productor[0m
+
+[2m[Enter][0m[H[2J[3J[1;36m5/6  Contrato: un cambio que rompe no pasa[0m
+[2mUn desarrollador borra el campo currency[0m
+
+[1mBarrera 1 · el chequeo del CI, ejecutado en local[0m
+[1;33m$ check_contracts.py --candidate v2-sin-currency.avsc[0m
+[1;31mFALLA: incompatible con FULL_TRANSITIVE [currency at /fields/6][0m
+
+[1mBarrera 2 · alguien se salta el CI y va directo al registry[0m
+[1;33m$ POST /subjects/pricing.state.parking-rule-211814.v1-value/versions[0m
+[1;31mHTTP 409: [currency at /fields/6][0m
+
+[1;32m✔ Versiones registradas: [1] (la versión rota no entró)[0m
+
+[2m[Enter][0m[H[2J[3J[1;36m6/6  Evolución: un cambio compatible sí pasa[0m
+[2mSe agrega maxSessionMinutes, opcional y con valor por defecto[0m
+
+[1;33m$ kubectl apply -k <claim con contract.version: 2>[0m
+[1;32m✔ v2 registrada en 4,8 s · versiones [1,2][0m
+
+[1;33m$ productor escribe con v2 → consumidores leen el mismo mensaje[0m
+  consumidor v1  →  SE:4021  SEK  precio=15000  (no conoce el campo)
+  consumidor v2  →  SE:4021  SEK  precio=15000  maxSessionMinutes=240
+
+[1;32m✔ El consumidor con v1 sigue leyendo: nadie tuvo que coordinar un despliegue[0m
+
+[2m[Enter][0m
+[2mRestaurando el entorno (no hace falta grabar esto)...[0m
+[2mEntorno restaurado.[0m
+
+Script done on 2026-11-23 21:19:19-05:00 [COMMAND_EXIT_CODE="0"]
