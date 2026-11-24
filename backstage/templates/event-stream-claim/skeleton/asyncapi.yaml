@@ -1,0 +1,27 @@
+asyncapi: 3.0.0
+info:
+  title: ${{ values.topic }}
+  version: 1.1.0
+  description: ${{ values.description }}
+  x-parkglobal:
+    owner: team-${{ values.team }}
+    pattern: ECST (event-carried state transfer)
+    subject: ${{ values.topic }}-value
+    compatibility: FULL_TRANSITIVE
+servers:
+  local:
+    host: events-kafka-bootstrap.kafka.svc:9092
+    protocol: kafka
+channels:
+  ${{ values.topic }}:
+    address: ${{ values.topic }}
+    messages:
+      state:
+        name: state
+        contentType: application/vnd.apache.avro+binary
+        bindings:
+          kafka:
+            key: { type: string, description: "${{ values.keyFormat }}" }
+        payload:
+          schemaFormat: application/vnd.apache.avro;version=1.9.0
+          schema: ${{ values.schema | indent(12) }}

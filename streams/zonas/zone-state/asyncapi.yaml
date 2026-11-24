@@ -1,0 +1,125 @@
+# GENERADO por scripts/contracts/render_catalog.py a partir del claim y de schemas/v1.avsc. No editar a mano.
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "ZoneState",
+    "version": "1.1.0",
+    "description": "Estado público de cada zona de parqueo, con referencia a su ciudad (cityId).",
+    "x-parkglobal": {
+      "owner": "team-zonas",
+      "pattern": "ECST (event-carried state transfer)",
+      "subject": "topology.state.zone.v1-value",
+      "compatibility": "FULL_TRANSITIVE",
+      "pii": false,
+      "sloP99Seconds": 5,
+      "retention": "compactada por clave; tombstone = baja"
+    }
+  },
+  "servers": {
+    "local": {
+      "host": "events-kafka-bootstrap.kafka.svc:9092",
+      "protocol": "kafka"
+    }
+  },
+  "channels": {
+    "topology.state.zone.v1": {
+      "address": "topology.state.zone.v1",
+      "messages": {
+        "ZoneState": {
+          "name": "ZoneState",
+          "contentType": "application/vnd.apache.avro+binary",
+          "bindings": {
+            "kafka": {
+              "key": {
+                "type": "string",
+                "description": "<countryCode>:<zoneNo>"
+              }
+            }
+          },
+          "payload": {
+            "schemaFormat": "application/vnd.apache.avro;version=1.9.0",
+            "schema": {
+              "type": "record",
+              "name": "ZoneState",
+              "namespace": "io.parkglobal.topology.state",
+              "doc": "ECST · Foto completa del estado público de una zona de parqueo. Dueño: team-zonas. Clave del mensaje: '<countryCode>:<zoneNo>' (string, sin esquema). La jerarquía Ciudad -> Zona se expresa por referencia (cityId), no por anidamiento. Valor nulo = tombstone (zona dada de baja).",
+              "fields": [
+                {
+                  "name": "zoneKey",
+                  "type": "string",
+                  "doc": "Identidad de la zona, igual a la clave del mensaje. Formato <countryCode>:<zoneNo>."
+                },
+                {
+                  "name": "countryCode",
+                  "type": "string",
+                  "doc": "País ISO 3166-1 alfa-2."
+                },
+                {
+                  "name": "zoneNo",
+                  "type": "int",
+                  "doc": "Número de zona dentro del país."
+                },
+                {
+                  "name": "version",
+                  "type": "long",
+                  "doc": "Versión monotónica por zona (descartar versiones menores o iguales)."
+                },
+                {
+                  "name": "name",
+                  "type": "string",
+                  "doc": "Nombre visible de la zona."
+                },
+                {
+                  "name": "cityId",
+                  "type": "string",
+                  "doc": "Referencia a la ciudad (p. ej. SE-STO). El consumidor agrupa zonas por ciudad en su vista local."
+                },
+                {
+                  "name": "cityName",
+                  "type": "string",
+                  "doc": "Nombre de la ciudad, desnormalizado para que el consumidor no tenga que llamar a otra API."
+                },
+                {
+                  "name": "status",
+                  "type": {
+                    "type": "enum",
+                    "name": "ZoneStatus",
+                    "symbols": [
+                      "ACTIVE",
+                      "INACTIVE",
+                      "UNKNOWN"
+                    ],
+                    "default": "UNKNOWN"
+                  },
+                  "doc": "Estado operativo de la zona."
+                },
+                {
+                  "name": "timezone",
+                  "type": "string",
+                  "doc": "Zona horaria IANA."
+                },
+                {
+                  "name": "updatedAt",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  },
+                  "doc": "Momento del commit en Zonas."
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "publishZoneState": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/topology.state.zone.v1"
+      },
+      "summary": "team-zonas publica la foto completa del estado (único escritor)."
+    }
+  }
+}

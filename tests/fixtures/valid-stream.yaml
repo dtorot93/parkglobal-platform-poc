@@ -1,0 +1,15 @@
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim
+metadata:
+  name: valid-stream
+  namespace: team-tarifas
+spec:
+  owner: { team: tarifas, costCenter: CC-PRC-01 }
+  domain: pricing
+  entity: zone-tariff
+  type: state
+  key: { format: "<countryCode>:<zoneNo>", pattern: "^[A-Z]{2}:[0-9]+$" }
+  environment: dev
+  contract: { format: avro, version: 1 }
+  governance: { pii: false, sloP99Seconds: 5 }
+  consumers: [ { team: zonas } ]

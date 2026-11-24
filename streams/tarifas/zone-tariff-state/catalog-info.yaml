@@ -1,0 +1,25 @@
+# GENERADO por scripts/contracts/render_catalog.py. Entidad API (AsyncAPI) del catálogo de streams.
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: pricing-state-zone-tariff-v1
+  title: ZoneTariffState (pricing.state.zone-tariff.v1)
+  description: Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).
+  annotations:
+    parkglobal.io/topic: pricing.state.zone-tariff.v1
+    parkglobal.io/schema-subject: pricing.state.zone-tariff.v1-value
+    parkglobal.io/compatibility: FULL_TRANSITIVE
+    parkglobal.io/contract-version: "1"
+    parkglobal.io/pii: "false"
+    parkglobal.io/slo-p99-seconds: "5"
+    parkglobal.io/cost-center: CC-PRC-01
+    parkglobal.io/consumers: "team-zonas,team-consumidor-c"
+    backstage.io/kubernetes-namespace: team-tarifas
+  tags: [ecst, kafka, avro, pricing, golden-path]
+spec:
+  type: asyncapi
+  lifecycle: experimental
+  owner: group:team-tarifas
+  system: pricing
+  definition:
+    $text: ./asyncapi.yaml

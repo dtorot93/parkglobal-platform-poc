@@ -1,0 +1,299 @@
+# Implementación local del contrato EventStreamClaim: Strimzi (≙ Amazon MSK) + Apicurio Registry.
+# En AWS se sustituye por `eventstream-msk-apicurio` (KafkaTopic vía provider-kafka contra MSK); el contrato no cambia (ADR-002, ADR-006).
+#
+# Recursos compuestos por cada claim:
+#   topic          Object (provider-kubernetes) -> KafkaTopic compactado en el namespace kafka (el XR vive en team-<x>;
+#                  en Crossplane v2 un XR namespaced solo compone en su namespace, de ahí el Object).
+#   registrar      ConfigMap con el script que registra el contrato (biblioteca estándar de Python).
+#   contract-job-v<N>-<hash>  Job que registra v1..vN en orden con FULL_TRANSITIVE y publica metadatos de catálogo. Segunda barrera:
+#                  si alguien saltó el CI, el registry responde 409, el Job falla y el claim no queda Ready.
+#   client-config  ConfigMap <tópico>-client en el namespace del dueño (rol producer).
+#   client-<team>  Object -> ConfigMap <tópico>-client en el namespace de cada consumidor (rol consumer).
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: eventstream-strimzi-apicurio
+  labels:
+    platform.parkglobal.io/broker: strimzi
+    platform.parkglobal.io/registry: apicurio
+spec:
+  compositeTypeRef:
+    apiVersion: platform.parkglobal.io/v1alpha1
+    kind: EventStreamClaim
+  mode: Pipeline
+  pipeline:
+    - step: render
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource }}
+            {{- $s := $xr.spec }}
+            {{- $name := $xr.metadata.name }}
+            {{- $ns := $xr.metadata.namespace }}
+            {{- $major := int (default 1 $s.majorVersion) }}
+            {{- $topic := printf "%s.%s.%s.v%d" $s.domain (default "state" $s.type) $s.entity $major }}
+            {{- $subject := printf "%s-value" $topic }}
+            {{- $cv := int $s.contract.version }}
+            {{- $compat := "FULL_TRANSITIVE" }}
+            {{- /* Perfiles semánticos -> configuración concreta del tópico */}}
+            {{- $partitions := index (dict "small" 3 "standard" 6) (default "small" $s.profile) }}
+            {{- $segmentMs := index (dict "dev" "600000" "staging" "3600000") $s.environment }}
+            {{- $bootstrap := "events-kafka-bootstrap.kafka.svc:9092" }}
+            {{- $registry := "http://schema-registry.team-platform-events.svc:8080" }}
+            {{- $ccompat := printf "%s/apis/ccompat/v7" $registry }}
+            {{- $gov := default (dict) $s.governance }}
+            {{- $labels := dict
+                  "parkglobal.io/team" $s.owner.team
+                  "parkglobal.io/cost-center" $s.owner.costCenter
+                  "parkglobal.io/environment" $s.environment
+                  "parkglobal.io/stream" $name }}
+            {{- $consumerTeams := list }}
+            {{- range (default (list) $s.consumers) }}{{ $consumerTeams = append $consumerTeams (printf "team-%s" .team) }}{{ end }}
+            {{- $catalogLabels := dict
+                  "owner" (printf "team-%s" $s.owner.team)
+                  "domain" $s.domain
+                  "topic" $topic
+                  "pattern" "ecst-state"
+                  "pii" (printf "%v" (default false $gov.pii))
+                  "slo-p99-seconds" (printf "%v" (default 5 $gov.sloP99Seconds))
+                  "cost-center" $s.owner.costCenter
+                  "consumers" (join "," $consumerTeams) }}
+            {{- $catalogJson := $catalogLabels | toJson }}
+            {{- $jobHash := printf "%s|%s|%d" $catalogJson (default "" $gov.description) $cv | sha256sum | trunc 6 }}
+            {{- $observed := default (dict) .observed.resources }}
+            {{- $topicReady := false }}
+            {{- with index $observed "topic" }}
+              {{- range (dig "status" "conditions" (list) .resource) }}
+                {{- if and (eq .type "Ready") (eq .status "True") }}{{ $topicReady = true }}{{ end }}
+              {{- end }}
+            {{- end }}
+            {{- /* El nombre lógico del Job incluye versión y hash: un contrato nuevo = un Job nuevo (los Jobs son inmutables)
+                   y el estado se calcula sobre el Job de ESTA versión, nunca sobre el de la anterior. */}}
+            {{- $jobKey := printf "contract-job-v%d-%s" $cv $jobHash }}
+            {{- $registered := false }}
+            {{- with index $observed $jobKey }}
+              {{- if gt (int (dig "status" "succeeded" 0 .resource)) 0 }}{{ $registered = true }}{{ end }}
+            {{- end }}
+            {{- $clientData := dict
+                  "KAFKA_BOOTSTRAP_SERVERS" $bootstrap
+                  "SCHEMA_REGISTRY_URL" $ccompat
+                  "TOPIC" $topic
+                  "SUBJECT" $subject
+                  "CONTRACT_FORMAT" "avro"
+                  "COMPATIBILITY" $compat
+                  "KEY_FORMAT" $s.key.format
+                  "KEY_PATTERN" $s.key.pattern
+                  "SERDE_AUTO_REGISTER_SCHEMAS" "false"
+                  "SERDE_USE_LATEST_VERSION" "false" }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $name }}-topic
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: topic
+              labels: {{ $labels | toJson }}
+            spec:
+              # Sin Delete: borrar el claim no borra el estado del negocio; retirar un stream es una deprecación explícita.
+              managementPolicies: ["Observe", "Create", "Update", "LateInitialize"]
+              readiness:
+                policy: DeriveFromObject
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: kubernetes-provider
+              forProvider:
+                manifest:
+                  apiVersion: kafka.strimzi.io/v1
+                  kind: KafkaTopic
+                  metadata:
+                    name: {{ $topic }}
+                    namespace: kafka
+                    labels: {{ merge (dict "strimzi.io/cluster" "events") $labels | toJson }}
+                  spec:
+                    partitions: {{ $partitions }}
+                    replicas: 1
+                    config:
+                      cleanup.policy: compact
+                      min.compaction.lag.ms: "60000"
+                      delete.retention.ms: "604800000"
+                      segment.ms: "{{ $segmentMs }}"
+                      min.cleanable.dirty.ratio: "0.1"
+                      message.timestamp.type: CreateTime
+            ---
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: {{ $name }}-registrar
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: registrar
+                gotemplating.fn.crossplane.io/ready: "True"
+              labels: {{ $labels | toJson }}
+            data:
+              register.py: |
+                # Registra v1..vN del contrato en orden. Idempotente: una versión ya registrada devuelve el mismo id.
+                import glob, json, os, re, sys, time, urllib.error, urllib.request
+                REG = os.environ["REGISTRY_URL"].rstrip("/")
+                CC = REG + "/apis/ccompat/v7"
+                SUBJECT, COMPAT = os.environ["SUBJECT"], os.environ["COMPATIBILITY"]
+                TARGET = int(os.environ["CONTRACT_VERSION"])
+                H = {"Content-Type": "application/vnd.schemaregistry.v1+json"}
+
+                def call(method, url, body=None, headers=H):
+                    req = urllib.request.Request(url, method=method, headers=headers,
+                                                 data=json.dumps(body).encode() if body is not None else None)
+                    try:
+                        with urllib.request.urlopen(req, timeout=20) as r:
+                            return r.status, r.read().decode()
+                    except urllib.error.HTTPError as e:
+                        return e.code, e.read().decode()
+                    except OSError as e:
+                        return 0, str(e)
+
+                for _ in range(60):
+                    if call("GET", CC + "/subjects")[0] == 200:
+                        break
+                    print("esperando al registry...", flush=True)
+                    time.sleep(5)
+                else:
+                    sys.exit("registry no disponible")
+
+                files = sorted(((int(re.search(r"v(\d+)\.avsc$", p).group(1)), p) for p in glob.glob("/contract/v*.avsc")))
+                if [n for n, _ in files] != list(range(1, TARGET + 1)):
+                    sys.exit("versiones en el ConfigMap %s no coinciden con contract.version=%d" % ([n for n, _ in files], TARGET))
+
+                code, body = call("PUT", CC + "/config/" + SUBJECT, {"compatibility": COMPAT})
+                if code != 200:
+                    sys.exit("no se pudo fijar la compatibilidad (%s): %s" % (code, body))
+                for n, path in files:
+                    code, body = call("POST", CC + "/subjects/" + SUBJECT + "/versions",
+                                      {"schema": open(path).read(), "schemaType": "AVRO"})
+                    if code == 409:
+                        print("RECHAZADO 409: v%d es incompatible con %s bajo %s" % (n, SUBJECT, COMPAT))
+                        print(body)
+                        sys.exit(2)
+                    if code != 200:
+                        sys.exit("error registrando v%d (%s): %s" % (n, code, body))
+                    print("v%d registrada en %s -> id %s" % (n, SUBJECT, json.loads(body)["id"]), flush=True)
+
+                code, body = call("GET", CC + "/subjects/" + SUBJECT + "/versions")
+                if code == 200 and len(json.loads(body)) > TARGET:
+                    print("AVISO: el registry tiene %d versiones y el repositorio declara %d: alguien registró fuera del Golden Path "
+                          "o se revirtió un claim. Las versiones registradas no se borran (los mensajes históricos las necesitan)."
+                          % (len(json.loads(body)), TARGET))
+
+                meta = {"name": os.environ.get("ARTIFACT_NAME", SUBJECT),
+                        "description": os.environ.get("DESCRIPTION", ""),
+                        "labels": json.loads(os.environ.get("CATALOG_LABELS", "{}"))}
+                code, body = call("PUT", REG + "/apis/registry/v3/groups/default/artifacts/" + SUBJECT, meta,
+                                  {"Content-Type": "application/json"})
+                print("metadatos de catálogo:", "ok" if code in (200, 204) else "advertencia %s %s" % (code, body))
+                print(json.dumps({"subject": SUBJECT, "compatibility": COMPAT, "versions": TARGET}))
+            ---
+            apiVersion: batch/v1
+            kind: Job
+            metadata:
+              name: {{ $name }}-contract-v{{ $cv }}-{{ $jobHash }}
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: {{ $jobKey }}
+                gotemplating.fn.crossplane.io/ready: "{{ if $registered }}True{{ else }}False{{ end }}"
+              labels: {{ $labels | toJson }}
+            spec:
+              backoffLimit: 2
+              template:
+                metadata:
+                  labels: {{ $labels | toJson }}
+                spec:
+                  restartPolicy: Never
+                  securityContext:
+                    runAsNonRoot: true
+                    runAsUser: 65534
+                    seccompProfile: { type: RuntimeDefault }
+                  containers:
+                    - name: register
+                      image: python:3.13.17-alpine
+                      command: ["python", "/registrar/register.py"]
+                      env:
+                        - { name: PYTHONDONTWRITEBYTECODE, value: "1" }
+                        - { name: REGISTRY_URL, value: "{{ $registry }}" }
+                        - { name: SUBJECT, value: "{{ $subject }}" }
+                        - { name: COMPATIBILITY, value: "{{ $compat }}" }
+                        - { name: CONTRACT_VERSION, value: "{{ $cv }}" }
+                        - { name: ARTIFACT_NAME, value: "{{ $topic }}" }
+                        - { name: DESCRIPTION, value: {{ default "" $gov.description | toJson }} }
+                        - { name: CATALOG_LABELS, value: {{ $catalogJson | toJson }} }
+                      securityContext:
+                        allowPrivilegeEscalation: false
+                        readOnlyRootFilesystem: true
+                        capabilities: { drop: ["ALL"] }
+                      resources:
+                        requests: { cpu: 50m, memory: 32Mi }
+                        limits: { memory: 128Mi }
+                      volumeMounts:
+                        - { name: contract, mountPath: /contract, readOnly: true }
+                        - { name: registrar, mountPath: /registrar, readOnly: true }
+                  volumes:
+                    - name: contract
+                      configMap: { name: {{ $name }}-contract }
+                    - name: registrar
+                      configMap: { name: {{ $name }}-registrar }
+            ---
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: {{ $topic }}-client
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: client-config
+                gotemplating.fn.crossplane.io/ready: "True"
+              labels: {{ $labels | toJson }}
+            data: {{ merge (dict "ROLE" "producer" "PRODUCER_ACKS" "all" "PRODUCER_ENABLE_IDEMPOTENCE" "true") $clientData | toJson }}
+            {{- range (default (list) $s.consumers) }}
+            ---
+            apiVersion: kubernetes.m.crossplane.io/v1alpha1
+            kind: Object
+            metadata:
+              name: {{ $name }}-client-{{ .team }}
+              namespace: {{ $ns }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: client-{{ .team }}
+              labels: {{ $labels | toJson }}
+            spec:
+              readiness:
+                policy: SuccessfulCreate
+              providerConfigRef:
+                kind: ClusterProviderConfig
+                name: kubernetes-provider
+              forProvider:
+                manifest:
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: {{ $topic }}-client
+                    namespace: team-{{ .team }}
+                    labels: {{ merge (dict "parkglobal.io/consumer-team" .team) $labels | toJson }}
+                  data: {{ merge (dict "ROLE" "consumer" "CONSUMER_GROUP_PREFIX" (printf "team-%s.%s" .team $topic) "CONSUMER_AUTO_OFFSET_RESET" "earliest") $clientData | toJson }}
+            {{- end }}
+            ---
+            apiVersion: platform.parkglobal.io/v1alpha1
+            kind: EventStreamClaim
+            status:
+              topic: {{ $topic }}
+              subject: {{ $subject }}
+              compatibility: {{ $compat }}
+              contractVersion: "v{{ $cv }}"
+              registryUrl: {{ $ccompat }}
+              bootstrapServers: {{ $bootstrap }}
+              clientConfig: {{ $topic }}-client
+              topicReady: {{ $topicReady }}
+              contractRegistered: {{ $registered }}
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: function-auto-ready

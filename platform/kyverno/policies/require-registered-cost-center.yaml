@@ -6,7 +6,7 @@ metadata:
     policies.kyverno.io/title: Centro de costo registrado
     policies.kyverno.io/category: FinOps
     policies.kyverno.io/description: >-
-      Todo DatabaseClaim declara owner y un centro de costo registrado en kyverno/cost-centers.
+      Todo DatabaseClaim y EventStreamClaim declara owner y un centro de costo registrado en kyverno/cost-centers.
 spec:
   background: false
   rules:
@@ -14,10 +14,10 @@ spec:
       match:
         any:
           - resources:
-              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim, platform.parkglobal.io/v1alpha1/EventStreamClaim]
       validate:
         failureAction: Enforce
-        message: "Todo DatabaseClaim debe declarar spec.owner.team y spec.owner.costCenter (FinOps)."
+        message: "Todo {{ request.object.kind }} debe declarar spec.owner.team y spec.owner.costCenter (FinOps)."
         pattern:
           spec:
             owner:
@@ -27,7 +27,7 @@ spec:
       match:
         any:
           - resources:
-              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim, platform.parkglobal.io/v1alpha1/EventStreamClaim]
       preconditions:
         all:
           - key: "{{ request.object.spec.owner.costCenter || '' }}"

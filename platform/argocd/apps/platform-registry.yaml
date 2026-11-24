@@ -1,0 +1,21 @@
+# Schema Registry (Apicurio) y su base de datos, pedida con el DatabaseClaim del P1 (requiere la XRD de la ola -1).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-registry
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/dtorot93/parkglobal-platform-poc.git
+    targetRevision: main
+    path: platform/registry
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [ServerSideApply=true, SkipDryRunOnMissingResource=true]
+    retry: { limit: 10, backoff: { duration: 10s, factor: 2, maxDuration: 3m } }

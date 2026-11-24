@@ -6,9 +6,14 @@ policies:
     rules:
       - name: cost-center-registered
         values:
-          costcenters.data.allowed: "CC-PARK-01,CC-PAY-01"
+          costcenters.data.allowed: "CC-PARK-01,CC-PAY-01,CC-PRC-01,CC-TOP-01,CC-CHG-01,CC-PLAT-01"
   - name: limit-claims-per-namespace
     rules:
       - name: max-3-claims
         values:
           claimcount: 0
+  - name: eventstream-domain-ownership
+    rules:
+      - name: domain-belongs-to-owner
+        values:
+          eventdomains.data.owners: "pricing:tarifas,topology:zonas"

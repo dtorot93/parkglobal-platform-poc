@@ -1,0 +1,35 @@
+# Una Application por stream: streams/<team>/<stream>/ -> namespace team-<team>.
+# Argo CD detecta kustomization.yaml: aplica el EventStreamClaim y genera el ConfigMap <stream>-contract con
+# schemas/v1..vN.avsc. catalog-info.yaml y asyncapi.yaml viven al lado pero son para Backstage, no para el clúster.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: streams
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/dtorot93/parkglobal-platform-poc.git
+        revision: main
+        directories:
+          - path: streams/*/*
+  template:
+    metadata:
+      name: 'stream-{{ index .path.segments 1 }}-{{ .path.basename }}'
+      labels:
+        parkglobal.io/golden-path: event-stream
+        parkglobal.io/team: '{{ index .path.segments 1 }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/dtorot93/parkglobal-platform-poc.git
+        targetRevision: main
+        path: '{{ .path.path }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'team-{{ index .path.segments 1 }}'
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        retry: { limit: 5, backoff: { duration: 10s, factor: 2, maxDuration: 2m } }

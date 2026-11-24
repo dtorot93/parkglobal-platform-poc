@@ -6,7 +6,7 @@ metadata:
     policies.kyverno.io/title: Namespace del equipo propietario
     policies.kyverno.io/category: Seguridad
     policies.kyverno.io/description: >-
-      Un equipo solo puede solicitar bases de datos en su propio namespace team-<team>.
+      Un equipo solo puede solicitar bases de datos o streams en su propio namespace team-<team>.
 spec:
   background: false
   rules:
@@ -14,11 +14,11 @@ spec:
       match:
         any:
           - resources:
-              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim, platform.parkglobal.io/v1alpha1/EventStreamClaim]
       validate:
         failureAction: Enforce
         message: >-
-          El DatabaseClaim debe crearse en el namespace team-{{ request.object.spec.owner.team || '<sin-owner>' }},
+          El {{ request.object.kind }} debe crearse en el namespace team-{{ request.object.spec.owner.team || '<sin-owner>' }},
           no en {{ request.object.metadata.namespace }}.
         deny:
           conditions:

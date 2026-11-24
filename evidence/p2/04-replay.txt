@@ -1,0 +1,30 @@
+# 04 · Consumidor nuevo: relectura desde el offset 0 · 2026-11-23T23:04:23Z
+# Grupo de consumo nuevo + almacenamiento vacío: la vista se reconstruye sin llamar a ninguna API
+
+Pod anterior: consumidor-c-676b999766-jcdt4 · pod nuevo: consumidor-c-5d45d8cccb-4qw87
+Rollout terminado (pod nuevo listo): 1530 ms
+Vista completa en el pod nuevo (5 tarifas, 5 zonas): 5295 ms desde el cambio de configuración
+
+{
+  "api_calls_received": 0,
+  "events_published": 0,
+  "events_consumed": 215,
+  "stale_or_duplicate_skipped": 2,
+  "tombstones_applied": 0,
+  "publish_errors": 0,
+  "poison_messages_skipped": 0,
+  "tariff_view_size": 5,
+  "zone_view_size": 5,
+  "app": "consumidor-c"
+}
+
+## Log del pod nuevo
+2026-11-23 23:04:19,423 consumidor-c INFO consumiendo pricing.state.zone-tariff.v1 con el grupo team-consumidor-c.pricing.state.zone-tariff.v1.rebuild-1795475058
+2026-11-23 23:04:19,434 consumidor-c INFO consumiendo topology.state.zone.v1 con el grupo team-consumidor-c.topology.state.zone.v1.rebuild-1795475058
+2026-11-23 23:04:22,487 consumidor-c INFO vista local vacía: relectura de pricing.state.zone-tariff.v1 particiones [0, 1, 2] desde el offset 0
+2026-11-23 23:04:22,498 consumidor-c INFO vista local vacía: relectura de topology.state.zone.v1 particiones [0, 1, 2] desde el offset 0
+
+## Comprobaciones
+  ✔ Es un pod nuevo
+  ✔ Reconstruyó 5 tarifas y 5 zonas
+  ✔ Leyó desde el tópico (events_consumed > 0) y no recibió llamadas

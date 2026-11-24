@@ -1,0 +1,98 @@
+# 02 · Propagación del estado (ECST) · 2026-11-23T23:03:53Z
+# PUT de una tarifa en Tarifas -> Zonas y Consumidor C actualizan su vista local
+
+Tarifa SE:4021 -> maxDailyPriceMinor=24320, versión 48 (outbox + relay tras el commit, sin espera fija)
+Visible en las vistas de Zonas y del Consumidor C en: 694 ms
+  (cota superior: incluye dos kubectl exec por cada sondeo; la latencia real del bus está en la ráfaga de abajo)
+Llamadas recibidas por la API de Tarifas durante el cambio: 0  (diagnóstico actual: >= 4 llamadas síncronas por cambio)
+
+## SLO de entrega (updatedAt en Tarifas -> escritura en la vista local): ráfaga de 200 cambios, ventana limpia
+zonas          {"samples":200,"p50":113,"p95":203,"p99":248,"max":289}
+consumidor-c   {"samples":200,"p50":111,"p95":203,"p99":227,"max":275}
+(SLO del contrato: p99 < 5000 ms. Reloj único: productores y consumidores corren en el mismo nodo kind)
+
+## Zonas responde con su vista local (GET /zones/SE:4021)
+{
+  "zone": {
+    "zoneKey": "SE:4021",
+    "countryCode": "SE",
+    "zoneNo": 4021,
+    "version": 1,
+    "name": "Södermalm Norte",
+    "cityId": "SE-STO",
+    "cityName": "Stockholm",
+    "status": "ACTIVE",
+    "timezone": "Europe/Stockholm",
+    "updatedAt": 1795305230532
+  },
+  "tariff": {
+    "zoneKey": "SE:4021",
+    "countryCode": "SE",
+    "zoneNo": 4021,
+    "version": 88,
+    "status": "ACTIVE",
+    "timezone": "Europe/Stockholm",
+    "currency": "SEK",
+    "validFrom": "2026-11-21T23:53:50.408000+00:00",
+    "validTo": null,
+    "parkingTypesByChannel": {
+      "APP": [
+        "STREET"
+      ],
+      "ANPR": [
+        "GATED"
+      ]
+    },
+    "parkingFree": false,
+    "maxDailyPriceMinor": 10195,
+    "updatedAt": "2026-11-23T23:04:05.882000+00:00"
+  }
+}
+
+## Métricas de los consumidores
+{
+  "api_calls_received": 0,
+  "events_published": 0,
+  "events_consumed": 201,
+  "stale_or_duplicate_skipped": 0,
+  "tombstones_applied": 0,
+  "publish_errors": 0,
+  "poison_messages_skipped": 0,
+  "e2e_latency_ms": {
+    "samples": 200,
+    "p50": 113,
+    "p95": 203,
+    "p99": 248,
+    "max": 289
+  },
+  "zones_outbox_pending": 0,
+  "tariff_view_size": 5,
+  "app": "zonas"
+}
+{
+  "api_calls_received": 0,
+  "events_published": 0,
+  "events_consumed": 230,
+  "stale_or_duplicate_skipped": 2,
+  "tombstones_applied": 0,
+  "publish_errors": 0,
+  "poison_messages_skipped": 0,
+  "e2e_latency_ms": {
+    "samples": 200,
+    "p50": 111,
+    "p95": 203,
+    "p99": 227,
+    "max": 275
+  },
+  "tariff_view_size": 5,
+  "zone_view_size": 5,
+  "app": "consumidor-c"
+}
+
+## Comprobaciones
+  ✔ El cambio llegó a las dos vistas locales
+  ✔ 0 llamadas a la API de Tarifas por el cambio
+  ✔ zonas midió los 200 cambios de la ráfaga
+  ✔ zonas cumple el SLO (p99 < 5000 ms)
+  ✔ consumidor-c midió los 200 cambios de la ráfaga
+  ✔ consumidor-c cumple el SLO (p99 < 5000 ms)

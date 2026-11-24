@@ -1,0 +1,170 @@
+# GENERADO por scripts/contracts/render_catalog.py a partir del claim y de schemas/v1.avsc. No editar a mano.
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "ZoneTariffState",
+    "version": "1.1.0",
+    "description": "Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).",
+    "x-parkglobal": {
+      "owner": "team-tarifas",
+      "pattern": "ECST (event-carried state transfer)",
+      "subject": "pricing.state.zone-tariff.v1-value",
+      "compatibility": "FULL_TRANSITIVE",
+      "pii": false,
+      "sloP99Seconds": 5,
+      "retention": "compactada por clave; tombstone = baja"
+    }
+  },
+  "servers": {
+    "local": {
+      "host": "events-kafka-bootstrap.kafka.svc:9092",
+      "protocol": "kafka"
+    }
+  },
+  "channels": {
+    "pricing.state.zone-tariff.v1": {
+      "address": "pricing.state.zone-tariff.v1",
+      "messages": {
+        "ZoneTariffState": {
+          "name": "ZoneTariffState",
+          "contentType": "application/vnd.apache.avro+binary",
+          "bindings": {
+            "kafka": {
+              "key": {
+                "type": "string",
+                "description": "<countryCode>:<zoneNo>"
+              }
+            }
+          },
+          "payload": {
+            "schemaFormat": "application/vnd.apache.avro;version=1.9.0",
+            "schema": {
+              "type": "record",
+              "name": "ZoneTariffState",
+              "namespace": "io.parkglobal.pricing.state",
+              "doc": "ECST · Foto completa del estado público de la tarifa de una zona. Dueño: team-tarifas. Clave del mensaje: '<countryCode>:<zoneNo>' (string, sin esquema). Valor nulo = tombstone (la zona dejó de tener tarifa).",
+              "fields": [
+                {
+                  "name": "zoneKey",
+                  "type": "string",
+                  "doc": "Identidad de la zona, igual a la clave del mensaje. Formato <countryCode>:<zoneNo>, p. ej. SE:4021."
+                },
+                {
+                  "name": "countryCode",
+                  "type": "string",
+                  "doc": "País ISO 3166-1 alfa-2."
+                },
+                {
+                  "name": "zoneNo",
+                  "type": "int",
+                  "doc": "Número de zona dentro del país."
+                },
+                {
+                  "name": "version",
+                  "type": "long",
+                  "doc": "Versión monotónica por zona. El consumidor descarta mensajes con versión menor o igual a la que ya tiene (idempotencia y reordenamientos)."
+                },
+                {
+                  "name": "status",
+                  "type": {
+                    "type": "enum",
+                    "name": "TariffStatus",
+                    "symbols": [
+                      "ACTIVE",
+                      "SUSPENDED",
+                      "UNKNOWN"
+                    ],
+                    "default": "UNKNOWN"
+                  },
+                  "doc": "Estado de la tarifa. El default del enum permite agregar símbolos sin romper lectores antiguos."
+                },
+                {
+                  "name": "timezone",
+                  "type": "string",
+                  "doc": "Zona horaria IANA de la zona, p. ej. Europe/Stockholm."
+                },
+                {
+                  "name": "currency",
+                  "type": "string",
+                  "doc": "Moneda ISO 4217, p. ej. SEK."
+                },
+                {
+                  "name": "validFrom",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  },
+                  "doc": "Inicio de vigencia de la tarifa."
+                },
+                {
+                  "name": "validTo",
+                  "type": [
+                    "null",
+                    {
+                      "type": "long",
+                      "logicalType": "timestamp-millis"
+                    }
+                  ],
+                  "default": null,
+                  "doc": "Fin de vigencia; null si no tiene fin."
+                },
+                {
+                  "name": "parkingTypesByChannel",
+                  "type": {
+                    "type": "map",
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": "enum",
+                        "name": "ParkingType",
+                        "symbols": [
+                          "STREET",
+                          "GATED",
+                          "CHARGING",
+                          "UNKNOWN"
+                        ],
+                        "default": "UNKNOWN"
+                      }
+                    }
+                  },
+                  "doc": "Tipos de aparcamiento permitidos por canal de venta (APP, ANPR, PAYSTATION). Hoy lo calcula la caché de tarifas y Zonas lo obtiene pasando por Core."
+                },
+                {
+                  "name": "parkingFree",
+                  "type": "boolean",
+                  "doc": "true si aparcar es gratis en la zona (lo usa el Consumidor C para decidir su tipo de carga)."
+                },
+                {
+                  "name": "maxDailyPriceMinor",
+                  "type": [
+                    "null",
+                    "long"
+                  ],
+                  "default": null,
+                  "doc": "Precio máximo diario en unidades menores de la moneda (öre, céntimos). Entero para evitar errores de redondeo de coma flotante."
+                },
+                {
+                  "name": "updatedAt",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  },
+                  "doc": "Momento del commit en Tarifas (outbox)."
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "publishZoneTariffState": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/pricing.state.zone-tariff.v1"
+      },
+      "summary": "team-tarifas publica la foto completa del estado (único escritor)."
+    }
+  }
+}

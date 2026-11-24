@@ -5,4 +5,4 @@ metadata:
   name: cost-centers
   namespace: kyverno
 data:
-  allowed: "CC-PARK-01,CC-PAY-01"
+  allowed: "CC-PARK-01,CC-PAY-01,CC-PRC-01,CC-TOP-01,CC-CHG-01,CC-PLAT-01"

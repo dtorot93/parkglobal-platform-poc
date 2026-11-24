@@ -1,0 +1,16 @@
+# Dogfooding: el Platform Team pide la base de datos del Schema Registry con su propio Golden Path (P1).
+# Mismas políticas Kyverno, mismas etiquetas FinOps, misma composición (CNPG local ≙ Aurora en AWS).
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: DatabaseClaim
+metadata:
+  name: schema-registry-db
+  namespace: team-platform-events
+spec:
+  owner:
+    team: platform-events
+    costCenter: CC-PLAT-01
+  engine: postgresql
+  size: small
+  environment: dev
+  access:
+    readers: [grp-platform-events]

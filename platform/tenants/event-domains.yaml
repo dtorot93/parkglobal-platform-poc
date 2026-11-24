@@ -1,0 +1,10 @@
+# Propiedad de dominios de eventos (único escritor por dominio). Lo consume la política eventstream-domain-ownership:
+# un equipo solo puede publicar streams en los dominios que le pertenecen. En ParkGlobal, fuente: catálogo de Backstage.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: event-domains
+  namespace: kyverno
+data:
+  # <dominio>:<equipo dueño>
+  owners: "pricing:tarifas,topology:zonas"

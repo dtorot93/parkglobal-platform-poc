@@ -1,0 +1,20 @@
+# 07 · Registry: cambio incompatible rechazado (409) · 2026-11-23T23:04:29Z
+# POST directo al registry del clúster con el contrato sin currency (saltándose el CI)
+
+409 {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible artifact: pricing.state.zone-tariff.v1-value [AVRO], num of incompatible diffs: {1}, list of diff types: [currency at /fields/6]","error_code":409}
+
+## Versiones del subject: antes [1] · después [1]
+
+## Primera barrera (CI) con el mismo archivo (código de salida 1)
+== streams/tarifas/zone-tariff-state
+  ok  v1 compatible (FULL_TRANSITIVE) -> id 1
+::error file=tests/contracts/zone-tariff-state-v2-breaking.avsc,title=Contrato::zone-tariff-state-v2-breaking.avsc es INCOMPATIBLE con las versiones anteriores bajo FULL_TRANSITIVE. Si el cambio es intencional, publique un tópico .v<major+1> con doble publicación. Registry: io.apicurio.registry.rules.violation.RuleViolationException: Incompatible artifact: ci-672490a7-pricing.state.zone-tariff.v1-value [AVRO], num of incompatible diffs: {1}, list of diff types: [currency at /fields/6]
+
+FALLÓ: 1 problema(s) de contrato.
+
+## Comprobaciones
+  ✔ El registry responde 409
+  ✔ El diagnóstico señala el campo: [currency at /fields/6]
+  ✔ La versión rota no se registró ([1] = [1])
+  ✔ El chequeo del CI falla
+  ✔ El CI señala el mismo campo

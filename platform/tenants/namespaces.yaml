@@ -13,3 +13,48 @@ metadata:
   labels:
     parkglobal.io/team: payments-core
     parkglobal.io/cost-center: CC-PAY-01
+---
+# Dueño del dominio pricing (Tarifas)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-tarifas
+  labels:
+    parkglobal.io/team: tarifas
+    parkglobal.io/cost-center: CC-PRC-01
+---
+# Dueño del dominio topology (Zonas)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-zonas
+  labels:
+    parkglobal.io/team: zonas
+    parkglobal.io/cost-center: CC-TOP-01
+---
+# Consumidor C del PPTX: tipo de carga y comisión
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-consumidor-c
+  labels:
+    parkglobal.io/team: consumidor-c
+    parkglobal.io/cost-center: CC-CHG-01
+---
+# Platform Team: capacidad de gestión de eventos
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-platform-events
+  labels:
+    parkglobal.io/team: platform-events
+    parkglobal.io/cost-center: CC-PLAT-01
+---
+# Broker de eventos de la plataforma (Strimzi + clúster Kafka). En ParkGlobal: Amazon MSK.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka
+  labels:
+    parkglobal.io/team: platform-events
+    parkglobal.io/cost-center: CC-PLAT-01

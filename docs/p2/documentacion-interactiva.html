@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Golden Path de Eventos ECST</title>
+<meta name="description" content="ParkGlobal · Proyecto 2 · Sección IV (Daniel): capacidad de gestión de eventos con Kafka, Schema Registry y ECST.">
+<style>
+:root{
+  --bg:#f6f7f9;--surface:#ffffff;--surface-2:#eef1f5;--text:#16191d;--muted:#5b6470;--border:#d9dee5;
+  --accent:#2f5bd3;--accent-soft:#e3eafc;--ok:#1f7a4d;--ok-soft:#dff3e8;--bad:#b3261e;--bad-soft:#fbe4e2;
+  --warn:#8a5a00;--warn-soft:#fbefd5;--code:#f1f3f6;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --c1:#2f5bd3;--c2:#1f7a4d;--c3:#8a5a00;--c4:#7a3fb0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1216;--surface:#171b21;--surface-2:#1f252d;--text:#e7eaee;--muted:#9aa4b2;--border:#2b323c;
+    --accent:#7c9cff;--accent-soft:#1d2a4d;--ok:#5fd39a;--ok-soft:#163327;--bad:#ff8a80;--bad-soft:#3a1d1b;
+    --warn:#f0c060;--warn-soft:#3a2e12;--code:#11151a;--shadow:none;--c1:#7c9cff;--c2:#5fd39a;--c3:#f0c060;--c4:#c39bff;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1216;--surface:#171b21;--surface-2:#1f252d;--text:#e7eaee;--muted:#9aa4b2;--border:#2b323c;
+  --accent:#7c9cff;--accent-soft:#1d2a4d;--ok:#5fd39a;--ok-soft:#163327;--bad:#ff8a80;--bad-soft:#3a1d1b;
+  --warn:#f0c060;--warn-soft:#3a2e12;--code:#11151a;--shadow:none;--c1:#7c9cff;--c2:#5fd39a;--c3:#f0c060;--c4:#c39bff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px 14px;overflow:auto;max-height:420px;margin:0}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center}
+.brand{font-weight:700;white-space:nowrap}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:thin}
+nav.tabs button{border:1px solid transparent;background:none;color:var(--muted);padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;font:inherit;font-size:13.5px}
+nav.tabs button:hover{color:var(--text);background:var(--surface-2)}
+nav.tabs button[aria-selected="true"]{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 9px;cursor:pointer}
+main{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+section.panel{display:none}
+section.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+h1{font-size:26px;margin:4px 0 6px;letter-spacing:-.01em}
+h2{font-size:20px;margin:26px 0 10px}
+h3{font-size:16px;margin:18px 0 8px}
+p.lead{color:var(--muted);margin:0 0 16px;max-width:860px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:860px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.kpi{padding:14px 16px}
+.kpi .v{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.kpi .l{color:var(--muted);font-size:13px}
+.kpi .d{font-size:12.5px;margin-top:4px}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.tablewrap{overflow-x:auto}
+.verdict{display:flex;gap:14px;align-items:flex-start;border-left:4px solid var(--warn);background:var(--warn-soft)}
+.verdict .big{font-size:22px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--surface);color:var(--muted);padding:7px 12px;cursor:pointer;font:inherit;font-size:13.5px;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)}
+details{border:1px solid var(--border);border-radius:10px;background:var(--surface);margin:8px 0}
+details summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:center}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+details .body{padding:0 14px 14px}
+/* diagrama */
+.diagram{width:100%;height:auto}
+.diagram .box{fill:var(--surface);stroke:var(--border);stroke-width:1.2}
+.diagram .lane{fill:var(--surface-2);stroke:none}
+.diagram text{fill:var(--text);font-size:12px}
+.diagram .lanelabel{fill:var(--muted);font-size:11px;font-weight:600;letter-spacing:.06em}
+.diagram .node{cursor:pointer}
+.diagram .node:hover .box,.diagram .node.sel .box{stroke:var(--accent);stroke-width:2}
+.diagram .edge{stroke:var(--muted);stroke-width:1.4;fill:none}
+.diagram .edge.hot{stroke:var(--accent);stroke-width:2.2}
+.diagram .edge.bad{stroke:var(--bad);stroke-dasharray:5 4}
+.diagram .tag{font-size:10.5px;fill:var(--muted)}
+.diagram .pkt{fill:var(--accent)}
+.diagram .pkt.bad{fill:var(--bad)}
+.side{min-height:120px}
+/* flujo */
+.steps{counter-reset:s;display:grid;gap:8px}
+.step{display:flex;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);opacity:.45;transition:opacity .2s,border-color .2s}
+.step.on{opacity:1;border-color:var(--accent)}
+.step .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:700;font-size:12.5px}
+.step.on .n{background:var(--accent);color:#fff}
+.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit;font-size:13.5px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+/* schema */
+.field-row td:first-child{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+tr.added td{background:var(--ok-soft)}
+tr.removed td{background:var(--bad-soft);text-decoration:line-through;color:var(--bad)}
+.result{padding:12px 14px;border-radius:10px;margin-top:10px;font-size:14px}
+.result.ok{background:var(--ok-soft);color:var(--ok)}
+.result.bad{background:var(--bad-soft);color:var(--bad)}
+/* barras */
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:200px 1fr 90px;gap:10px;align-items:center;font-size:13.5px}
+@media (max-width:640px){.bar{grid-template-columns:1fr}}
+.bar .track{height:14px;background:var(--surface-2);border-radius:7px;overflow:hidden}
+.bar .fill{height:100%;border-radius:7px;background:var(--c1);transition:width .6s ease}
+.bar .fill.alt{background:var(--c3)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--border)}
+.check input{margin-top:4px}
+.progress{height:10px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.progress > div{height:100%;background:var(--ok);transition:width .3s}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:8px;margin:12px 0}
+.footer{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--border);padding-top:12px}
+.evtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">Golden Path de Eventos<small>ParkGlobal · P2 · Sección IV · Daniel</small></div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button role="tab" data-tab="resumen">Resumen</button>
+      <button role="tab" data-tab="viabilidad">Viabilidad</button>
+      <button role="tab" data-tab="arquitectura">Arquitectura</button>
+      <button role="tab" data-tab="flujo">Flujo ECST</button>
+      <button role="tab" data-tab="contratos">Contratos</button>
+      <button role="tab" data-tab="decisiones">Decisiones</button>
+      <button role="tab" data-tab="evidencia">Evidencia</button>
+      <button role="tab" data-tab="rubrica">Rúbrica</button>
+      <button role="tab" data-tab="reproducir">Reproducir</button>
+    </nav>
+    <button class="theme-btn" id="themeBtn" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  </div>
+</header>
+
+<main>
+<!-- ============================== RESUMEN ============================== -->
+<section class="panel" id="resumen">
+  <span class="pill acc">Proyecto 2 · Sección IV · Extensión de la PoC</span>
+  <h1>Publicar un stream de estado gobernado, en autoservicio</h1>
+  <p class="lead">Capacidad de la plataforma de gestión de eventos. Un equipo declara un <code>EventStreamClaim</code> con su contrato Avro. La plataforma crea el tópico compactado, registra el contrato con FULL_TRANSITIVE, entrega la configuración de cliente al dueño y a cada consumidor, y publica la ficha del stream en el catálogo. El piloto es el caso <b>Tarifas → Zonas → Consumidor C</b> de la Sección I, con la jerarquía <b>Ciudad → Zona → Tarifa</b> resuelta por referencia (opción A+).</p>
+  <div class="grid g4">
+    <div class="card kpi"><div class="l">Llamadas síncronas por cambio de tarifa</div><div class="v">≥4 → 0</div><div class="d muted">medido: 0 llamadas a la API de Tarifas</div></div>
+    <div class="card kpi"><div class="l">Entrega commit → vista local</div><div class="v">p99 227 ms</div><div class="d muted">p50 111 ms · 200 cambios medidos · SLO p99 &lt; 5 000 ms</div></div>
+    <div class="card kpi"><div class="l">Stream gobernado listo (claim → Ready)</div><div class="v">5,0–35,6 s</div><div class="d muted">mediana 35,5 s en 5 streams nuevos; el tópico y el contrato están listos en segundos</div></div>
+    <div class="card kpi"><div class="l">Cambio incompatible</div><div class="v">2 barreras</div><div class="d muted">CI en rojo + 409 en el registry</div></div>
+  </div>
+  <h2>Qué hay en este documento</h2>
+  <div class="grid g3">
+    <div class="card"><b>Viabilidad</b><p class="muted">Por qué la idea original (agregado Ciudad anidado) se reencuadró y qué ambigüedades había en los insumos.</p></div>
+    <div class="card"><b>Arquitectura y flujo</b><p class="muted">Diagrama interactivo por planos y una simulación paso a paso del antes (REST) y el después (ECST).</p></div>
+    <div class="card"><b>Contratos y gobierno</b><p class="muted">Contratos Avro reales, un simulador de evolución y la matriz del spike JSON Schema vs Avro.</p></div>
+  </div>
+  <div class="callout"><b>Herramientas (todas open source):</b> Strimzi 1.3.0 (Kafka 4.3.1, KRaft) · Apicurio Registry 3.3.4 · Crossplane v2 + provider-kubernetes · Kyverno · Argo CD · Backstage · CloudNativePG (base del registry pedida con el Golden Path del P1).</div>
+</section>
+
+<!-- ============================== VIABILIDAD ============================== -->
+<section class="panel" id="viabilidad">
+  <h1>Paso 0 · Análisis de viabilidad</h1>
+  <p class="lead">Propuesta inicial: un contrato para <b>Ciudades</b> con su jerarquía interna (Ciudades → Zonas → Tarifas) y propagar hacia la ciudad cada cambio de una zona o una tarifa.</p>
+  <div class="card verdict"><div class="big">⚖️</div><div><b>Veredicto: viable con ajustes de fondo.</b> La intuición era correcta (contrato registrado y estado que llega a los consumidores sin llamadas síncronas), pero había tres problemas. (1) El contrato y el flujo ECST eran tarea de Juan, no de Daniel. (2) Contradecía el diseño del equipo (Tarifas → Zonas, <code>ZoneTariffState</code>). (3) El agregado anidado es un antipatrón para ECST en este caso. <b>Opción elegida: A+</b>: capacidad de plataforma <code>EventStreamClaim</code>, con piloto <code>ZoneTariffState</code> más <code>ZoneState</code>, y la jerarquía por referencia.</div></div>
+
+  <h2>Granularidad: compara las alternativas</h2>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="granSeg" role="group" aria-label="Alternativa">
+      <button aria-pressed="true" data-g="entidad">Tópico por entidad</button>
+      <button aria-pressed="false" data-g="ciudad">Ciudad anidada</button>
+      <button aria-pressed="false" data-g="derivada">Ciudad derivada (stream processing)</button>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><svg class="diagram" id="granSvg" viewBox="0 0 520 250" role="img" aria-label="Diagrama de la alternativa"></svg></div>
+    <div class="card"><div class="tablewrap"><table id="granTable"></table></div></div>
+  </div>
+
+  <h2>Ambigüedades detectadas en los insumos</h2>
+  <div class="tablewrap card"><table>
+    <tr><th>#</th><th>Ambigüedad</th><th>Resolución</th></tr>
+    <tr><td>1</td><td><code>enunciado_proyecto_parte_2.pdf</code> es idéntico byte a byte al de la parte 1 (mismo MD5)</td><td>Los requisitos reales salen de <code>responsables.xlsx</code> y <code>rubrica.pdf</code>; conviene confirmarlo con el docente</td></tr>
+    <tr><td>2</td><td>«Ciudades» no aparece en la Parte 2; no queda claro si una zona tiene una o varias tarifas</td><td>Agregado = la zona (con sus tarifas); la ciudad se modela por referencia (<code>cityId</code>)</td></tr>
+    <tr><td>3</td><td>Sección IV asignada a «Daniel / Felipe»</td><td>Confirmado: Daniel la ejecuta completa</td></tr>
+    <tr><td>4</td><td>JSON Schema + FULL_TRANSITIVE (diapositiva 6) contradice sus propias notas sobre <code>additionalProperties</code></td><td>Spike empírico en dos registries → Avro (ADR-005)</td></tr>
+    <tr><td>5</td><td>¿El outbox o el CDC entran en la PoC?</td><td>Outbox en el servicio de referencia; Debezium en la fase 2</td></tr>
+    <tr><td>6</td><td>«Registry obligatorio» frente a Kafka OSS, que no valida en el broker</td><td>Escritor único por dominio + <code>auto.register.schemas=false</code> + CI + 409</td></tr>
+    <tr><td>7</td><td>La PoC del P1 se fijó en macOS; aquí el entorno es WSL2 con cgroup v1</td><td><code>failCgroupV1: false</code> en kind (sin efecto en cgroup v2)</td></tr>
+    <tr><td>8</td><td>GitOps lee <code>main</code>, pero sin permiso de push</td><td><code>scripts/local-up.sh</code> aplica las mismas olas en local</td></tr>
+  </table></div>
+</section>
+
+<!-- ============================== ARQUITECTURA ============================== -->
+<section class="panel" id="arquitectura">
+  <h1>Arquitectura de la capacidad</h1>
+  <p class="lead">Haz clic en un componente para ver su papel, la pieza equivalente en ParkGlobal y dónde vive en el repositorio.</p>
+  <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+    <div class="card"><svg class="diagram" id="archSvg" viewBox="0 0 760 470" role="img" aria-label="Arquitectura por planos"></svg></div>
+    <div class="card side" id="archInfo"><b>Selecciona un componente</b><p class="muted">Los planos siguen el modelo del curso: Desarrollador, Integración y entrega, Control Plane (Platform API), Recursos y equipos stream-aligned.</p></div>
+  </div>
+  <style>@media (max-width:860px){#arquitectura .grid{grid-template-columns:1fr!important}}</style>
+
+  <h2>Estrategia de plataforma</h2>
+  <div class="grid g2">
+    <div class="card"><h3>Granularidad y nombres</h3><table>
+      <tr><td>Tópico</td><td><code>&lt;dominio&gt;.state.&lt;entidad&gt;.v&lt;major&gt;</code></td></tr>
+      <tr><td>Subject</td><td>TopicNameStrategy · <code>&lt;tópico&gt;-value</code></td></tr>
+      <tr><td>Clave</td><td>string sin esquema · <code>SE:4021</code></td></tr>
+      <tr><td>Escritor</td><td>uno por dominio (Kyverno lo exige al declarar; el bus de la PoC no tiene ACL)</td></tr>
+      <tr><td>Configuración de cliente</td><td><code>&lt;tópico&gt;-client</code> en cada namespace</td></tr>
+    </table></div>
+    <div class="card"><h3>Estado con ECST y compactación</h3><table>
+      <tr><td><code>cleanup.policy</code></td><td>compact (una foto por clave)</td></tr>
+      <tr><td><code>min.compaction.lag.ms</code></td><td>60 000</td></tr>
+      <tr><td><code>delete.retention.ms</code></td><td>7 días (visibilidad del tombstone)</td></tr>
+      <tr><td><code>segment.ms</code></td><td>10 min dev · 1 h staging</td></tr>
+      <tr><td>Particiones</td><td>small 3 · standard 6 · fijas</td></tr>
+      <tr><td>Borrar el claim</td><td>el tópico <b>se conserva</b></td></tr>
+    </table></div>
+  </div>
+  <h2>Lo que el desarrollador ya no tiene que saber</h2>
+  <div class="tablewrap card"><table>
+    <tr><th>Antes: lo decide y configura cada equipo</th><th>Ahora: lo declara el equipo (7 campos obligatorios + contrato)</th></tr>
+    <tr><td>Nombre del tópico, particiones, réplicas, <code>cleanup.policy</code>, <code>segment.ms</code>, <code>delete.retention.ms</code>, <code>min.compaction.lag.ms</code></td><td>Entidad, dominio y entorno: la plataforma deriva el nombre y aplica un perfil fijo</td></tr>
+    <tr><td>Estrategia de subject, modo de compatibilidad, registro del esquema</td><td>El contrato Avro: FULL_TRANSITIVE fijo y registrado por la plataforma</td></tr>
+    <tr><td>Bootstrap, URL del registry, <code>auto.register.schemas</code>, <code>use.latest.version</code>, en cada servicio</td><td>Un <code>envFrom</code> por stream (3 líneas) del ConfigMap que crea la plataforma</td></tr>
+    <tr><td>Avisar a cada consumidor y pedirle que configure lo mismo</td><td>La lista de consumidores: cada uno recibe su configuración</td></tr>
+    <tr><td>Coordinar en reuniones si un cambio rompe a alguien</td><td>Nada: el CI señala el campo exacto que rompe</td></tr>
+  </table><p class="muted" style="margin:10px 0 0">El formulario tiene 11 campos; 4 son opcionales con valor por defecto (consumidores, PII, SLO, descripción).</p></div>
+</section>
+
+<!-- ============================== FLUJO ============================== -->
+<section class="panel" id="flujo">
+  <h1>Flujo de eventos: antes y después</h1>
+  <p class="lead">Simulación del cambio de una tarifa. Elige un escenario y avanza paso a paso, o reprodúcelo completo.</p>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="flowSeg" role="group" aria-label="Escenario">
+      <button aria-pressed="true" data-f="tobe">Con ECST (propuesto)</button>
+      <button aria-pressed="false" data-f="asis">Hoy (aviso + REST)</button>
+      <button aria-pressed="false" data-f="down">ECST con Tarifas caído</button>
+      <button aria-pressed="false" data-f="replay">Consumidor nuevo (relectura)</button>
+    </div>
+    <button class="btn" id="flowPrev">◀ Anterior</button>
+    <button class="btn primary" id="flowNext">Siguiente ▶</button>
+    <button class="btn" id="flowPlay">▶ Reproducir</button>
+  </div>
+  <div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(0,2fr)">
+    <div class="card"><svg class="diagram" id="flowSvg" viewBox="0 0 640 330" role="img" aria-label="Flujo de eventos"></svg>
+      <div class="row" style="margin-top:8px"><span class="pill" id="callCount">Llamadas síncronas: 0</span><span class="pill" id="flowNote"></span></div></div>
+    <div class="steps" id="flowSteps"></div>
+  </div>
+  <style>@media (max-width:860px){#flujo .grid{grid-template-columns:1fr!important}}</style>
+  <h2>Contrato de consumo (implementación de referencia)</h2>
+  <div class="grid g3">
+    <div class="card"><b>Upsert idempotente</b><p class="muted">Se aplica solo si <code>version</code> es mayor que la guardada; los duplicados y desórdenes se descartan. La versión es monotónica incluso a través de una baja.</p></div>
+    <div class="card"><b>Tombstone = borrar</b><p class="muted">Un valor nulo elimina la clave en la vista; la compactación lo retira del log pasado <code>delete.retention.ms</code>.</p></div>
+    <div class="card"><b>Vista desechable</b><p class="muted">Si la vista arranca vacía, se relee el tópico desde el offset 0, partición por partición, sin importar los offsets confirmados del grupo. Hallazgo de la PoC.</p></div>
+  </div>
+</section>
+
+<!-- ============================== CONTRATOS ============================== -->
+<section class="panel" id="contratos">
+  <h1>Contratos y gobierno</h1>
+  <p class="lead">Contratos Avro reales del repositorio, listos para registrar. La política es <b>FULL_TRANSITIVE</b>: cada versión lee y es leída por todas las anteriores, porque los despliegues ocurren en cualquier orden y el tópico compactado se relee desde el inicio.</p>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="schemaSeg" role="group" aria-label="Contrato">
+      <button aria-pressed="true" data-s="zt">ZoneTariffState · pricing.state.zone-tariff.v1</button>
+      <button aria-pressed="false" data-s="zs">ZoneState · topology.state.zone.v1</button>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="tablewrap"><table id="schemaTable"></table></div></div>
+    <div class="card"><pre id="schemaRaw"></pre></div>
+  </div>
+
+  <h2>Simulador de evolución (casos ejecutados contra Apicurio)</h2>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="evoSeg" role="group" aria-label="Cambio propuesto">
+      <button aria-pressed="true" data-e="compat">v2: agregar maxSessionMinutes (opcional)</button>
+      <button aria-pressed="false" data-e="breaking">v2: eliminar currency</button>
+      <button aria-pressed="false" data-e="nodefault">v2: campo nuevo sin default</button>
+    </div>
+  </div>
+  <div class="card"><div class="tablewrap"><table id="evoTable"></table></div><div id="evoResult"></div></div>
+
+  <h2>Spike: JSON Schema vs Avro bajo FULL_TRANSITIVE</h2>
+  <p class="muted">Ejecutado el 21-11-2026 contra Apicurio 3.3.4 y Karapace 6.2.4 (<code>evidence/p2/00-spike-compatibilidad.txt</code>). Filtra por formato:</p>
+  <div class="row" style="margin-bottom:8px"><div class="seg" id="spikeSeg"><button aria-pressed="true" data-k="all">Todo</button><button aria-pressed="false" data-k="json">JSON Schema</button><button aria-pressed="false" data-k="avro">Avro</button></div></div>
+  <div class="card tablewrap"><table id="spikeTable"></table></div>
+  <div class="callout">Conclusión: con JSON Schema y FULL_TRANSITIVE <b>no se puede agregar ni un campo opcional</b> en modelo cerrado o abierto, y los modelos parcialmente abiertos dan resultados distintos según el registry. Avro sigue una regla simple y estándar: campo con default = compatible. → ADR-005.</div>
+
+  <h2>Dos barreras de gobierno</h2>
+  <div class="grid g2">
+    <div class="card"><span class="pill acc">Barrera 1 · PR</span><h3>CI con registry efímero</h3><p class="muted">Kyverno (dueño, dominio propio, sin PII, centro de costo) + estructura + inmutabilidad de versiones + compatibilidad contra la misma imagen de Apicurio que producción. El error señala el campo: <code>[currency at /fields/6]</code>.</p></div>
+    <div class="card"><span class="pill acc">Barrera 2 · Clúster</span><h3>Registry + Kyverno en la admisión</h3><p class="muted">Si alguien salta el CI, el Job registrador recibe <b>409</b>, el claim no queda Ready y un productor con la configuración de la plataforma no puede serializar con ese esquema (<code>auto.register.schemas=false</code> → 40403). El evento queda en el outbox, sin perderse. Kafka no valida los mensajes y el bus de la PoC no tiene autenticación: un cliente que escriba bytes a mano se salta esta barrera.</p></div>
+  </div>
+</section>
+
+<!-- ============================== DECISIONES ============================== -->
+<section class="panel" id="decisiones">
+  <h1>Decisiones técnicas (ADR)</h1>
+  <p class="lead">Cada decisión registra las alternativas consideradas y su justificación.</p>
+  <div id="adrList"></div>
+</section>
+
+<!-- ============================== EVIDENCIA ============================== -->
+<section class="panel" id="evidencia">
+  <h1>Evidencia de la PoC</h1>
+  <p class="lead">11 escenarios reproducibles con <code>make events-demo</code> sobre el clúster local. Cada escenario comprueba sus afirmaciones: 48 comprobaciones correctas y 0 fallidas (<code>evidence/p2/resumen.txt</code>). Salida real en <code>evidence/p2/</code>, generada el 2026-11-23.</p>
+  <div class="grid g4" id="evKpis"></div>
+  <h2>Antes y después</h2>
+  <div class="card"><div class="bars" id="beforeAfter"></div></div>
+  <h2>Salida de cada escenario</h2>
+  <div class="evtabs" id="evTabs"></div>
+  <pre id="evOut"></pre>
+  <h2>Hallazgos durante la construcción</h2>
+  <div class="tablewrap card"><table>
+    <tr><th>Hallazgo</th><th>Corrección</th><th>Por qué importa</th></tr>
+    <tr><td>Vista local vacía + offsets del grupo ya confirmados = vista incompleta para siempre</td><td>Relectura desde el offset 0, decidida por partición</td><td>Trampa clásica de ECST con almacenamiento efímero</td></tr>
+    <tr><td>La asignación de particiones llega en varias llamadas (rolling update)</td><td>Rebobinado por partición + cierre ordenado ante SIGTERM</td><td>La relectura pasó de ~75 s a 5,3 s</td></tr>
+    <tr><td>Tras una baja, la versión volvía a 1</td><td>Versión monotónica a través del tombstone</td><td>Un consumidor que se perdió la baja no ignora la nueva tarifa</td></tr>
+    <tr><td>El Job de contrato es inmutable</td><td>Nombre lógico del recurso compuesto con versión y hash</td><td>La evolución v1→v2 por el Golden Path funciona sin intervención</td></tr>
+    <tr><td>El estado del productor estaba en almacenamiento efímero</td><td>PVC para los productores; la vista del consumidor sigue siendo desechable</td><td>El productor es la fuente de verdad; el consumidor, una proyección</td></tr>
+    <tr><td>El cliente del Schema Registry no tiene timeout por defecto: una respuesta perdida lo bloquea para siempre</td><td>Timeout de 10 s en el relay y en los consumidores</td><td>Un relay colgado detiene la publicación sin ningún error visible</td></tr>
+    <tr><td>Un mensaje ilegible mataba el hilo del consumidor</td><td>Se omite, se registra y se cuenta (<code>poison_messages_skipped</code>); fase 2: DLQ</td><td>Kafka no valida mensajes: una sola escritura mala congelaba la vista</td></tr>
+    <tr><td>El lead time se había medido una sola vez (4,5 s)</td><td>5 muestras con desglose por hito</td><td>El Ready llega en 5,0–35,6 s: provider-kubernetes ve el tópico listo por sondeo</td></tr>
+    <tr><td>La evidencia de evolución v2 no la probaba: la v2 ya estaba registrada y nadie escribía con ella</td><td>Stream desechable: registro real de la v2, un productor escribe con v2 y un lector v1 lee el mensaje</td><td>Es la afirmación central del contrato; ahora está demostrada</td></tr>
+    <tr><td>El script de evidencia casi no comprobaba resultados</td><td>Una comprobación ✔/✘ por afirmación y código de salida</td><td>«Corrió» no es lo mismo que «funcionó»</td></tr>
+  </table></div>
+</section>
+
+<!-- ============================== RÚBRICA ============================== -->
+<section class="panel" id="rubrica">
+  <h1>Cumplimiento de la rúbrica</h1>
+  <p class="lead">Marca cada evidencia al revisarla antes de la sustentación. Se guarda solo en este navegador.</p>
+  <div class="card"><div class="row" style="justify-content:space-between"><b id="rubProgressLabel"></b><span class="muted">Puntaje objetivo de la Sección IV: 20/20 (Nivel 4)</span></div><div class="progress" style="margin-top:8px"><div id="rubProgress"></div></div></div>
+  <div id="rubList"></div>
+</section>
+
+<!-- ============================== REPRODUCIR ============================== -->
+<section class="panel" id="reproducir">
+  <h1>Cómo reproducirlo</h1>
+  <div class="grid g2">
+    <div class="card"><h3>1 · Barrera del CI en local</h3><pre>make events-test</pre><p class="muted">Kyverno + contratos contra Apicurio efímero; el caso sin <code>currency</code> debe fallar.</p></div>
+    <div class="card"><h3>2 · Plataforma completa</h3><pre>make local-up      # ≈9 min la primera vez
+make events-status</pre><p class="muted">Mismas olas y versiones que Argo CD, sin necesidad de push.</p></div>
+    <div class="card"><h3>3 · Servicios de demostración</h3><pre>make events-demo-build events-demo-deploy</pre><p class="muted">Tarifas (outbox), Zonas (vista y productor) y Consumidor C (Ciudad → Zonas → Tarifa).</p></div>
+    <div class="card"><h3>4 · Escenarios y evidencia</h3><pre>make events-demo            # todos
+make events-demo ESC="02 07"  # algunos
+make registry-ui            # http://localhost:8888</pre></div>
+  </div>
+  <h2>Un stream nuevo, como lo vería un equipo</h2>
+  <pre># Golden Path «Publicar stream de estado (ECST)». Generado por la plantilla de Backstage event-stream-claim.
+# La plataforma deriva: tópico pricing.state.zone-tariff.v1 (compactado), subject &lt;tópico&gt;-value (FULL_TRANSITIVE),
+# registro del contrato, configuración de cliente para el dueño y para cada consumidor, y ficha en el catálogo.
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim
+metadata:
+  name: zone-tariff-state
+  namespace: team-tarifas
+spec:
+  owner:
+    team: tarifas
+    costCenter: CC-PRC-01
+  domain: pricing
+  entity: zone-tariff
+  type: state
+  majorVersion: 1
+  key:
+    format: "&lt;countryCode&gt;:&lt;zoneNo&gt;"
+    pattern: "^[A-Z]{2}:[0-9]+$"
+  profile: small
+  environment: dev
+  contract:
+    format: avro
+    version: 1          # última versión presente en schemas/ (v1.avsc ... vN.avsc)
+  governance:
+    pii: false
+    sloP99Seconds: 5
+    description: Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).
+  consumers:
+    - team: zonas
+    - team: consumidor-c
+</pre>
+  <p class="muted">En Backstage: plantilla «Publicar stream de estado (ECST)» → PR <code>stream/&lt;entidad&gt;-state</code> → CI → auto-merge → Argo CD (ApplicationSet <code>streams</code>).</p>
+  <div class="footer">ParkGlobal es un nombre anonimizado. Generado el 2026-11-23 a partir de los archivos del repositorio <code>parkglobal-platform-poc</code> (contratos, claims y <code>evidence/p2</code>).</div>
+</section>
+</main>
+
+<script>
+const DATA = {"zt": {"type": "record", "name": "ZoneTariffState", "namespace": "io.parkglobal.pricing.state", "doc": "ECST · Foto completa del estado público de la tarifa de una zona. Dueño: team-tarifas. Clave del mensaje: '<countryCode>:<zoneNo>' (string, sin esquema). Valor nulo = tombstone (la zona dejó de tener tarifa).", "fields": [{"name": "zoneKey", "type": "string", "doc": "Identidad de la zona, igual a la clave del mensaje. Formato <countryCode>:<zoneNo>, p. ej. SE:4021."}, {"name": "countryCode", "type": "string", "doc": "País ISO 3166-1 alfa-2."}, {"name": "zoneNo", "type": "int", "doc": "Número de zona dentro del país."}, {"name": "version", "type": "long", "doc": "Versión monotónica por zona. El consumidor descarta mensajes con versión menor o igual a la que ya tiene (idempotencia y reordenamientos)."}, {"name": "status", "type": {"type": "enum", "name": "TariffStatus", "symbols": ["ACTIVE", "SUSPENDED", "UNKNOWN"], "default": "UNKNOWN"}, "doc": "Estado de la tarifa. El default del enum permite agregar símbolos sin romper lectores antiguos."}, {"name": "timezone", "type": "string", "doc": "Zona horaria IANA de la zona, p. ej. Europe/Stockholm."}, {"name": "currency", "type": "string", "doc": "Moneda ISO 4217, p. ej. SEK."}, {"name": "validFrom", "type": {"type": "long", "logicalType": "timestamp-millis"}, "doc": "Inicio de vigencia de la tarifa."}, {"name": "validTo", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null, "doc": "Fin de vigencia; null si no tiene fin."}, {"name": "parkingTypesByChannel", "type": {"type": "map", "values": {"type": "array", "items": {"type": "enum", "name": "ParkingType", "symbols": ["STREET", "GATED", "CHARGING", "UNKNOWN"], "default": "UNKNOWN"}}}, "doc": "Tipos de aparcamiento permitidos por canal de venta (APP, ANPR, PAYSTATION). Hoy lo calcula la caché de tarifas y Zonas lo obtiene pasando por Core."}, {"name": "parkingFree", "type": "boolean", "doc": "true si aparcar es gratis en la zona (lo usa el Consumidor C para decidir su tipo de carga)."}, {"name": "maxDailyPriceMinor", "type": ["null", "long"], "default": null, "doc": "Precio máximo diario en unidades menores de la moneda (öre, céntimos). Entero para evitar errores de redondeo de coma flotante."}, {"name": "updatedAt", "type": {"type": "long", "logicalType": "timestamp-millis"}, "doc": "Momento del commit en Tarifas (outbox)."}]}, "zs": {"type": "record", "name": "ZoneState", "namespace": "io.parkglobal.topology.state", "doc": "ECST · Foto completa del estado público de una zona de parqueo. Dueño: team-zonas. Clave del mensaje: '<countryCode>:<zoneNo>' (string, sin esquema). La jerarquía Ciudad -> Zona se expresa por referencia (cityId), no por anidamiento. Valor nulo = tombstone (zona dada de baja).", "fields": [{"name": "zoneKey", "type": "string", "doc": "Identidad de la zona, igual a la clave del mensaje. Formato <countryCode>:<zoneNo>."}, {"name": "countryCode", "type": "string", "doc": "País ISO 3166-1 alfa-2."}, {"name": "zoneNo", "type": "int", "doc": "Número de zona dentro del país."}, {"name": "version", "type": "long", "doc": "Versión monotónica por zona (descartar versiones menores o iguales)."}, {"name": "name", "type": "string", "doc": "Nombre visible de la zona."}, {"name": "cityId", "type": "string", "doc": "Referencia a la ciudad (p. ej. SE-STO). El consumidor agrupa zonas por ciudad en su vista local."}, {"name": "cityName", "type": "string", "doc": "Nombre de la ciudad, desnormalizado para que el consumidor no tenga que llamar a otra API."}, {"name": "status", "type": {"type": "enum", "name": "ZoneStatus", "symbols": ["ACTIVE", "INACTIVE", "UNKNOWN"], "default": "UNKNOWN"}, "doc": "Estado operativo de la zona."}, {"name": "timezone", "type": "string", "doc": "Zona horaria IANA."}, {"name": "updatedAt", "type": {"type": "long", "logicalType": "timestamp-millis"}, "doc": "Momento del commit en Zonas."}]}, "v2c": {"type": "record", "name": "ZoneTariffState", "namespace": "io.parkglobal.pricing.state", "doc": "FIXTURE DE PRUEBA · v2 compatible: agrega maxSessionMinutes opcional con default null. Debe pasar FULL_TRANSITIVE.", "fields": [{"name": "zoneKey", "type": "string"}, {"name": "countryCode", "type": "string"}, {"name": "zoneNo", "type": "int"}, {"name": "version", "type": "long"}, {"name": "status", "type": {"type": "enum", "name": "TariffStatus", "symbols": ["ACTIVE", "SUSPENDED", "UNKNOWN"], "default": "UNKNOWN"}}, {"name": "timezone", "type": "string"}, {"name": "currency", "type": "string"}, {"name": "validFrom", "type": {"type": "long", "logicalType": "timestamp-millis"}}, {"name": "validTo", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null}, {"name": "parkingTypesByChannel", "type": {"type": "map", "values": {"type": "array", "items": {"type": "enum", "name": "ParkingType", "symbols": ["STREET", "GATED", "CHARGING", "UNKNOWN"], "default": "UNKNOWN"}}}}, {"name": "parkingFree", "type": "boolean"}, {"name": "maxDailyPriceMinor", "type": ["null", "long"], "default": null}, {"name": "updatedAt", "type": {"type": "long", "logicalType": "timestamp-millis"}}, {"name": "maxSessionMinutes", "type": ["null", "int"], "default": null, "doc": "Duración máxima de una sesión en la zona; null si no hay límite."}]}, "v2b": {"type": "record", "name": "ZoneTariffState", "namespace": "io.parkglobal.pricing.state", "doc": "FIXTURE DE PRUEBA · v2 incompatible: elimina el campo requerido currency (caso de la diapositiva 6). Debe ser rechazado por FULL_TRANSITIVE (CI rojo y 409 en el registry).", "fields": [{"name": "zoneKey", "type": "string"}, {"name": "countryCode", "type": "string"}, {"name": "zoneNo", "type": "int"}, {"name": "version", "type": "long"}, {"name": "status", "type": {"type": "enum", "name": "TariffStatus", "symbols": ["ACTIVE", "SUSPENDED", "UNKNOWN"], "default": "UNKNOWN"}}, {"name": "timezone", "type": "string"}, {"name": "validFrom", "type": {"type": "long", "logicalType": "timestamp-millis"}}, {"name": "validTo", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null}, {"name": "parkingTypesByChannel", "type": {"type": "map", "values": {"type": "array", "items": {"type": "enum", "name": "ParkingType", "symbols": ["STREET", "GATED", "CHARGING", "UNKNOWN"], "default": "UNKNOWN"}}}}, {"name": "parkingFree", "type": "boolean"}, {"name": "maxDailyPriceMinor", "type": ["null", "long"], "default": null}, {"name": "updatedAt", "type": {"type": "long", "logicalType": "timestamp-millis"}}]}, "spike": [{"m": "closed", "c": "add optional promoCode (string|null)", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "closed", "c": "remove required currency", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "open", "c": "add optional promoCode (string|null)", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "open", "c": "remove required currency", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "partial-pattern", "c": "add optional promoCode (string|null)", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "partial-pattern", "c": "add optional ext_promoCode (string|null)", "a": "RECHAZA", "k": "ACEPTA"}, {"m": "partial-pattern", "c": "remove required currency", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "partial-addl", "c": "add optional promoCode (string|null)", "a": "ACEPTA", "k": "ACEPTA"}, {"m": "partial-addl", "c": "remove required currency", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "avro", "c": "add optional promoCode with default", "a": "ACEPTA", "k": "ACEPTA"}, {"m": "avro", "c": "add promoCode WITHOUT default", "a": "RECHAZA", "k": "RECHAZA"}, {"m": "avro", "c": "remove required currency (no default)", "a": "RECHAZA", "k": "RECHAZA"}], "adrs": [{"title": "ADR-005 · Avro en lugar de JSON Schema para los contratos de streams de estado", "body": "**Estado:** aceptada (2026-11-21) · **Sección:** Proyecto 2, I (contrato) y IV (PoC) · **Reemplaza:** la elección de JSON Schema de la diapositiva 6 del borrador.\n\n## Contexto\n\nEl borrador de la Sección I eligió **JSON Schema + FULL_TRANSITIVE** para `ZoneTariffState`, con el argumento de que el bus ya es 100 % JSON. Sus propias notas reconocían el punto débil: en JSON Schema la compatibilidad depende del modelo de contenido (`additionalProperties`). Con modelo cerrado, agregar una propiedad opcional es compatible hacia atrás pero no hacia delante; con modelo abierto, al revés. FULL exige ambas direcciones.\n\nAntes de construir la PoC se ejecutó un spike reproducible (`scripts/contracts/spike_compat.py`, salida en `evidence/p2/00-spike-compatibilidad.txt`) contra **Apicurio Registry 3.3.4** y **Karapace 6.2.4**, con la política FULL_TRANSITIVE.\n\n| Modelo / cambio | Apicurio | Karapace |\n|---|---|---|\n| JSON cerrado · agregar propiedad opcional | **RECHAZA** | **RECHAZA** |\n| JSON abierto · agregar propiedad opcional | **RECHAZA** | **RECHAZA** |\n| JSON parcialmente abierto (`patternProperties ^ext_`) · agregar `ext_promoCode` | **RECHAZA** | ACEPTA |\n| JSON parcialmente abierto (`additionalProperties: {string\\|null}`) · agregar string\\|null | ACEPTA | ACEPTA |\n| JSON (cualquier modelo) · eliminar `currency` requerido | RECHAZA | RECHAZA |\n| **Avro · agregar campo opcional con default** | **ACEPTA** | **ACEPTA** |\n| Avro · agregar campo sin default | RECHAZA | RECHAZA |\n| Avro · eliminar `currency` (sin default) | RECHAZA | RECHAZA |\n\n## Decisión\n\nLos contratos de streams de estado se escriben en **Avro**, con política **FULL_TRANSITIVE** fija por la plataforma.\n\n## Por qué\n\n1. **Con JSON Schema el contrato quedaba congelado.** Bajo FULL_TRANSITIVE, ni el modelo cerrado ni el abierto permiten agregar un campo: todo cambio, incluso inocuo, obligaría a un tópico `.v2` con doble publicación. La plataforma se volvería un cuello de botella, justo lo contrario de su objetivo.\n2. **Las salidas en JSON Schema son frágiles.** El modelo parcialmente abierto solo funciona si cada campo nuevo tiene exactamente el tipo de `additionalProperties` (un contrato débilmente tipado), y la variante con `patternProperties` da resultados distintos según el registry. La compatibilidad de JSON Schema no está estandarizada: cada registry trae su propio verificador.\n3. **Avro tiene reglas simples, estandarizadas y coincidentes entre registries.** \"Campo nuevo con default: compatible; campo sin default o eliminado: incompatible\". Es una regla que un desarrollador aprende en un minuto (carga cognitiva pertinente, no extraña).\n4. **El costo de adopción es bajo.** El tópico es nuevo (no hay consumidores JSON que romper), el serializador estándar funciona contra Apicurio sin cambios, y Backstage muestra el contrato legible en la ficha AsyncAPI.\n\n## Consecuencias\n\n- La diapositiva 6 debe actualizarse: JSON Schema → Avro, citando este spike como evidencia.\n- Los enums declaran un `default` (Avro ≥ 1.9) para poder agregar símbolos sin romper lectores antiguos.\n- El dinero se modela en unidades menores (`long`) en vez de `double`, para evitar errores de redondeo.\n- La clave del mensaje sigue siendo un **string sin esquema** (`<countryCode>:<zoneNo>`). Si la clave se serializara con prefijo de id de esquema, una evolución del esquema de la clave cambiaría sus bytes y rompería la compactación y el particionamiento por clave."}, {"title": "ADR-006 · Apicurio Registry como Schema Registry de la plataforma", "body": "**Estado:** aceptada (2026-11-21) · **Sección:** Proyecto 2, IV\n\n## Contexto\n\nParkGlobal tiene un Schema Registry desplegado en una sola región, en una versión de 2018 que solo admite Avro, y ningún productor lo usa (diapositivas 1-2). La rúbrica exige herramientas **open source** para la PoC de gestión de eventos.\n\n## Alternativas\n\n| Opción | Licencia | A favor | En contra |\n|---|---|---|---|\n| **Apicurio Registry 3.3.4** | Apache-2.0 | API compatible con Confluent (`/apis/ccompat/v7`): los serializadores estándar funcionan sin cambios. API nativa v3 con **etiquetas y metadatos** por artefacto (dueño, PII, SLO, consumidores). Storage SQL: PostgreSQL pedido con el `DatabaseClaim` del P1. Consola web para evidencia. Soporta Avro, JSON Schema, Protobuf, AsyncAPI y OpenAPI. | No replica al 100 % la semántica de Confluent en JSON Schema (irrelevante tras ADR-005). |\n| Karapace 6.2.4 | Apache-2.0 | Réplica muy fiel de la API de Confluent. | Persiste en un tópico de Kafka (acopla registry y broker). No tiene metadatos de catálogo ni consola. |\n| Confluent Schema Registry | Confluent Community License | Estándar de facto. | **No es open source según la OSI**: incumple el criterio de la rúbrica. |\n| AWS Glue Schema Registry | Servicio gestionado | Integración nativa con MSK. | Lock-in, serializadores propios, no es OSS y no sirve en la PoC local. |\n\n## Decisión\n\n**Apicurio Registry 3.3.4** (imagen `apicurio/apicurio-registry:3.3.4`), con storage PostgreSQL. En CI se usa la **misma imagen** como contenedor efímero (en memoria).\n\n## Consecuencias\n\n- Una sola herramienta da contrato, política de compatibilidad y metadatos de gobierno. Cubre los puntos 1 (registry obligatorio) y 2 (catálogo de streams: dueño, SLA, PII) del backlog de madurez (diapositiva 2).\n- *Dogfooding*: el Platform Team pide la base del registry con su propio Golden Path (`platform/registry/schema-registry-db.yaml`), con las mismas políticas FinOps.\n- Producción: Apicurio en el clúster de gestión, autenticación OIDC (Okta) con roles. Solo la identidad de la plataforma (el Job registrador) puede escribir versiones; las aplicaciones solo leen (`auto.register.schemas=false`)."}, {"title": "ADR-007 · Un tópico de estado por entidad, con un solo dueño; jerarquía por referencia", "body": "**Estado:** aceptada (2026-11-21) · **Sección:** Proyecto 2, I y IV\n\n## Contexto\n\nLa propuesta inicial era un contrato único para **Ciudad**, con sus Zonas y Tarifas anidadas, y \"propagar hacia la Ciudad\" cada cambio en una Zona o una Tarifa. En ParkGlobal la tarifa pertenece a Tarifas y la zona a Zonas/Core (diapositivas 3-4).\n\n## Decisión\n\n1. **Un tópico compactado por entidad**, `<dominio>.state.<entidad>.v<major>`, con **un único equipo escritor** por dominio. Kyverno lo exige al **declarar** el stream, con la política `eventstream-domain-ownership` y el ConfigMap `event-domains`. En la PoC el bus no tiene autenticación ni ACL: Kyverno controla quién **declara** un stream, no quién escribe en el tópico. En ParkGlobal la escritura se restringe con las ACLs como código que ya existen (diapositiva 2), derivadas del dueño del claim.\n   - `pricing.state.zone-tariff.v1`: dueño Tarifas.\n   - `topology.state.zone.v1`: dueño Zonas, con `cityId` y `cityName`.\n2. **La jerarquía Ciudad → Zona → Tarifa se expresa por referencia** (`zoneKey`, `cityId`), no por anidamiento. Cada consumidor la compone en su vista local; el Consumidor C lo demuestra (`GET /cities`).\n3. **La clave del mensaje es la identidad de la entidad** (`<countryCode>:<zoneNo>`): da orden por zona, compactación (una foto por zona) y relectura desde el offset 0.\n\n## Por qué no el agregado Ciudad\n\n| Criterio | Tópico por entidad | Ciudad anidada |\n|---|---|---|\n| Un solo escritor por clave | Sí | No: o escritores parciales (gana el último y se pierde estado) o un agregador que recrea el intermediario (Core) |\n| Tamaño del mensaje | Una zona | Toda la ciudad; riesgo con `message.max.bytes` (~1 MB) |\n| Amplificación de escritura | 1 tarifa → 1 evento | 1 tarifa → republicar la ciudad entera |\n| Orden y particiones | Por zona; carga repartida | Por ciudad; partición caliente en ciudades grandes |\n| Concurrencia | Sin bloqueo | Leer, modificar y reescribir con bloqueo por ciudad |\n| Evolución | Independiente por dominio | Un cambio de tarifa versiona el contrato de ciudades |\n| Patrón | ECST (estado) | Riesgo de deltas o de cadena de eventos (Nivel 2 de la rúbrica) |\n\nUna vista de ciudad desnormalizada es legítima como **read model derivado** para un consumidor concreto, construido con stream processing. Esa capacidad está en el Nivel 2 de madurez y fuera de la TVP.\n\n## Consecuencias\n\n- Consistencia eventual por clave, garantizada por: orden por partición, `version` monotónica más upsert idempotente, tombstone para las bajas y `delete.retention.ms` = 7 días (un consumidor caído más tiempo debe releer desde cero).\n- Entre entidades se tolera el desorden: una tarifa que llega antes que su zona se guarda y se une cuando llega la zona (`tariffsWaitingForZone`).\n- El número de particiones es fijo tras la creación (perfil semántico). Cambiarlo rompería el mapeo clave → partición y, con él, el orden."}, {"title": "ADR-008 · Composición del EventStreamClaim: provider-kubernetes + Job registrador", "body": "**Estado:** aceptada (2026-11-21) · **Sección:** Proyecto 2, IV\n\n## Contexto\n\nEl `EventStreamClaim` vive en el namespace del equipo (`team-tarifas`), igual que el `DatabaseClaim` (ADR-004). Pero en Crossplane v2 **un XR namespaced solo compone recursos en su propio namespace**, y:\n\n- El Topic Operator de Strimzi observa un único namespace (`kafka`), donde debe vivir el `KafkaTopic`.\n- La configuración de cliente debe llegar al namespace de **cada consumidor**.\n- El contrato se registra por API REST en el Schema Registry, que no es un recurso de Kubernetes.\n\n## Decisión\n\n| Necesidad | Mecanismo |\n|---|---|\n| `KafkaTopic` en `kafka` | `Object` de **provider-kubernetes v1.4.1** (namespaced, `kubernetes.m.crossplane.io`) con `managementPolicies` sin `Delete`. |\n| ConfigMap de cliente en cada `team-<consumidor>` | `Object` de provider-kubernetes, uno por consumidor declarado. |\n| Registro del contrato | **Job** compuesto en el namespace del equipo. Monta el ConfigMap `<stream>-contract` (generado por kustomize desde `schemas/*.avsc`) y registra v1..vN en orden con FULL_TRANSITIVE. El nombre lleva la versión y un hash de sus entradas: un cambio crea un Job nuevo. |\n| Estado del claim | `status.topic`, `subject`, `contractVersion`, `topicReady`, `contractRegistered`; Ready solo si el tópico existe **y** el contrato quedó registrado. |\n\nEl ServiceAccount del provider tiene **mínimo privilegio**: solo `kafkatopics` y `configmaps`, nunca `cluster-admin` como en los ejemplos del provider.\n\n## Alternativas descartadas\n\n- **XRD cluster-scoped**: rompe el aislamiento por namespace del P1 y la política `namespace-matches-owner`.\n- **provider-http** para el registry: otro provider que operar, y el `Job` es más fácil de auditar (sus logs muestran el 409).\n- **provider-kafka** contra el broker: es la opción para producción con MSK (composición `eventstream-msk-apicurio`). En la PoC, Strimzi ya ofrece el `KafkaTopic` declarativo.\n\n## Consecuencias\n\n- Borrar un claim **no borra el tópico**: el estado del negocio no desaparece por accidente. Retirar un stream es una deprecación explícita.\n- Si alguien salta el CI con un contrato incompatible, el Job falla con el 409 del registry y el claim no queda Ready. Es la segunda barrera, simétrica a Kyverno en la admisión."}], "kpis": {"prop": "694", "p50": "111", "p99": "227", "n": "200", "replay": "5,3", "v2": "3,8", "lead": "5,0–35,6", "leadmed": "35,5", "leadn": "5", "checks": "48 comprobaciones correctas y 0 fallidas", "evdate": "2026-11-23"}, "evidence": [{"name": "00 spike", "text": "# Spike de compatibilidad · 2026-11-21T23:29:02Z · Apicurio Registry 3.3.4 y Karapace 6.2.4 · política FULL_TRANSITIVE\n# Reproducir: scripts/contracts/spike_compat.py (ver docs/adr/ADR-005)\n\n### apicurio\nclosed           | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\nclosed           | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\nopen             | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\nopen             | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\npartial-pattern  | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\npartial-pattern  | add optional ext_promoCode (string|null)   | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\npartial-pattern  | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\npartial-addl     | add optional promoCode (string|null)       | cfg=200 v1=200 -> ACEPTA        \npartial-addl     | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\navro             | add optional promoCode with default        | cfg=200 v1=200 -> ACEPTA        \navro             | add promoCode WITHOUT default              | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\navro             | remove required currency (no default)      | cfg=200 v1=200 -> RECHAZA(409)  {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti\n\n### karapace\nclosed           | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\nclosed           | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\nopen             | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\nopen             | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\npartial-pattern  | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\npartial-pattern  | add optional ext_promoCode (string|null)   | cfg=200 v1=200 -> ACEPTA        \npartial-pattern  | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\npartial-addl     | add optional promoCode (string|null)       | cfg=200 v1=200 -> ACEPTA        \npartial-addl     | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\navro             | add optional promoCode with default        | cfg=200 v1=200 -> ACEPTA        \navro             | add promoCode WITHOUT default              | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\navro             | remove required currency (no default)      | cfg=200 v1=200 -> RECHAZA(409)  {\"error_code\":409,\"message\":\"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco\n"}, {"name": "01 estado", "text": "# 01 · Estado de la capacidad · 2026-11-23T23:03:46Z\n# kubectl get eventstreamclaims, kafkatopics, jobs registradores, ConfigMaps de cliente y subjects\n\nNAMESPACE      NAME                TOPIC                          CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE\nteam-tarifas   zone-tariff-state   pricing.state.zone-tariff.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   47h\nteam-zonas     zone-state          topology.state.zone.v1         v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   47h\n\nTOPIC                          PARTITIONS   CLEANUP   READY\npricing.state.zone-tariff.v1   3            compact   True\ntopology.state.zone.v1         3            compact   True\n\nNAMESPACE      NAME                                   STATUS     COMPLETIONS   DURATION   AGE\nteam-tarifas   zone-tariff-state-contract-v1-1a366e   Complete   1/1           4s         46h\nteam-zonas     zone-state-contract-v1-1df6bc          Complete   1/1           4s         47h\n\nteam-consumidor-c      pricing.state.zone-tariff.v1-client                    13     47h\nteam-consumidor-c      topology.state.zone.v1-client                          13     47h\nteam-tarifas           pricing.state.zone-tariff.v1-client                    13     47h\nteam-zonas             pricing.state.zone-tariff.v1-client                    13     47h\nteam-zonas             topology.state.zone.v1-client                          13     47h\n\n## Subjects y política en el registry\n200 [\"pricing.state.zone-tariff.v1-value\",\"topology.state.zone.v1-value\"]\n200 {\"compatibilityLevel\":\"FULL_TRANSITIVE\"}\n200 [1]\n200 {\"compatibilityLevel\":\"FULL_TRANSITIVE\"}\n200 [1]\n\n## Metadatos de catálogo en el registry (dueño, PII, SLO, consumidores)\n200 {\"name\":\"pricing.state.zone-tariff.v1\",\"description\":\"Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).\",\"owner\":\"\",\"createdOn\":\"2026-11-21T23:51:39Z\",\"modifiedBy\":\"\",\"modifiedOn\":\"2026-11-22T00:05:30Z\",\"artifactType\":\"AVRO\",\"labels\":{\"consumers\":\"team-zonas,team-consumidor-c\",\"cost-center\":\"CC-PRC-01\",\"domain\":\"pricing\",\"owner\":\"team-tarifas\",\"pattern\":\"ecst-state\",\"pii\":\"false\",\"slo-p99-seconds\":\"5\",\"topic\":\"pricing.state.zone-tariff.v1\"},\"artifactId\":\"pricing.state.zone-tariff.v1-value\"}\n\n## Lo que recibe el Consumidor C (sin pedirlo a nadie)\ndata:\n  COMPATIBILITY: FULL_TRANSITIVE\n  CONSUMER_AUTO_OFFSET_RESET: earliest\n  CONSUMER_GROUP_PREFIX: team-consumidor-c.pricing.state.zone-tariff.v1\n  CONTRACT_FORMAT: avro\n  KAFKA_BOOTSTRAP_SERVERS: events-kafka-bootstrap.kafka.svc:9092\n  KEY_FORMAT: <countryCode>:<zoneNo>\n  KEY_PATTERN: ^[A-Z]{2}:[0-9]+$\n  ROLE: consumer\n  SCHEMA_REGISTRY_URL: http://schema-registry.team-platform-events.svc:8080/apis/ccompat/v7\n  SERDE_AUTO_REGISTER_SCHEMAS: \"false\"\n  SERDE_USE_LATEST_VERSION: \"false\"\n  SUBJECT: pricing.state.zone-tariff.v1-value\n  TOPIC: pricing.state.zone-tariff.v1\nkind: ConfigMap\n\n## Comprobaciones\n  ✔ Los 2 claims del piloto están Ready\n  ✔ Los 2 tópicos son compactados\n  ✔ pricing.state.zone-tariff.v1-value: FULL_TRANSITIVE\n  ✔ pricing.state.zone-tariff.v1-value: versiones registradas = las del repositorio ([1])\n  ✔ topology.state.zone.v1-value: FULL_TRANSITIVE\n  ✔ topology.state.zone.v1-value: versiones registradas = las del repositorio ([1])\n  ✔ El Consumidor C recibió la configuración de los 2 streams\n"}, {"name": "02 propagación", "text": "# 02 · Propagación del estado (ECST) · 2026-11-23T23:03:53Z\n# PUT de una tarifa en Tarifas -> Zonas y Consumidor C actualizan su vista local\n\nTarifa SE:4021 -> maxDailyPriceMinor=24320, versión 48 (outbox + relay tras el commit, sin espera fija)\nVisible en las vistas de Zonas y del Consumidor C en: 694 ms\n  (cota superior: incluye dos kubectl exec por cada sondeo; la latencia real del bus está en la ráfaga de abajo)\nLlamadas recibidas por la API de Tarifas durante el cambio: 0  (diagnóstico actual: >= 4 llamadas síncronas por cambio)\n\n## SLO de entrega (updatedAt en Tarifas -> escritura en la vista local): ráfaga de 200 cambios, ventana limpia\nzonas          {\"samples\":200,\"p50\":113,\"p95\":203,\"p99\":248,\"max\":289}\nconsumidor-c   {\"samples\":200,\"p50\":111,\"p95\":203,\"p99\":227,\"max\":275}\n(SLO del contrato: p99 < 5000 ms. Reloj único: productores y consumidores corren en el mismo nodo kind)\n\n## Zonas responde con su vista local (GET /zones/SE:4021)\n{\n  \"zone\": {\n    \"zoneKey\": \"SE:4021\",\n    \"countryCode\": \"SE\",\n    \"zoneNo\": 4021,\n    \"version\": 1,\n    \"name\": \"Södermalm Norte\",\n    \"cityId\": \"SE-STO\",\n    \"cityName\": \"Stockholm\",\n    \"status\": \"ACTIVE\",\n    \"timezone\": \"Europe/Stockholm\",\n    \"updatedAt\": 1795305230532\n  },\n  \"tariff\": {\n    \"zoneKey\": \"SE:4021\",\n    \"countryCode\": \"SE\",\n    \"zoneNo\": 4021,\n    \"version\": 88,\n    \"status\": \"ACTIVE\",\n    \"timezone\": \"Europe/Stockholm\",\n    \"currency\": \"SEK\",\n    \"validFrom\": \"2026-11-21T23:53:50.408000+00:00\",\n    \"validTo\": null,\n    \"parkingTypesByChannel\": {\n      \"APP\": [\n        \"STREET\"\n      ],\n      \"ANPR\": [\n        \"GATED\"\n      ]\n    },\n    \"parkingFree\": false,\n    \"maxDailyPriceMinor\": 10195,\n    \"updatedAt\": \"2026-11-23T23:04:05.882000+00:00\"\n  }\n}\n\n## Métricas de los consumidores\n{\n  \"api_calls_received\": 0,\n  \"events_published\": 0,\n  \"events_consumed\": 201,\n  \"stale_or_duplicate_skipped\": 0,\n  \"tombstones_applied\": 0,\n  \"publish_errors\": 0,\n  \"poison_messages_skipped\": 0,\n  \"e2e_latency_ms\": {\n    \"samples\": 200,\n    \"p50\": 113,\n    \"p95\": 203,\n    \"p99\": 248,\n    \"max\": 289\n  },\n  \"zones_outbox_pending\": 0,\n  \"tariff_view_size\": 5,\n  \"app\": \"zonas\"\n}\n{\n  \"api_calls_received\": 0,\n  \"events_published\": 0,\n  \"events_consumed\": 230,\n  \"stale_or_duplicate_skipped\": 2,\n  \"tombstones_applied\": 0,\n  \"publish_errors\": 0,\n  \"poison_messages_skipped\": 0,\n  \"e2e_latency_ms\": {\n    \"samples\": 200,\n    \"p50\": 111,\n    \"p95\": 203,\n    \"p99\": 227,\n    \"max\": 275\n  },\n  \"tariff_view_size\": 5,\n  \"zone_view_size\": 5,\n  \"app\": \"consumidor-c\"\n}\n\n## Comprobaciones\n  ✔ El cambio llegó a las dos vistas locales\n  ✔ 0 llamadas a la API de Tarifas por el cambio\n  ✔ zonas midió los 200 cambios de la ráfaga\n  ✔ zonas cumple el SLO (p99 < 5000 ms)\n  ✔ consumidor-c midió los 200 cambios de la ráfaga\n  ✔ consumidor-c cumple el SLO (p99 < 5000 ms)\n"}, {"name": "03 disponibilidad", "text": "# 03 · Disponibilidad con el productor caído · 2026-11-23T23:04:15Z\n# kubectl scale deploy/tarifas --replicas=0 y consultas a los consumidores\n\nNAME      READY   UP-TO-DATE   AVAILABLE   AGE\ntarifas   0/0     0            0           47h\nNo resources found in team-tarifas namespace.\n\n## Zonas (sin Tarifas, sin Core, sin caché)\n{\n  \"zone\": {\n    \"zoneKey\": \"SE:4022\",\n    \"countryCode\": \"SE\",\n    \"zoneNo\": 4022,\n    \"version\": 1,\n    \"name\": \"Södermalm Sur\",\n    \"cityId\": \"SE-STO\",\n    \"cityName\": \"Stockholm\",\n    \"status\": \"ACTIVE\",\n    \"timezone\": \"Europe/Stockholm\",\n    \"updatedAt\": 1795305230539\n  },\n  \"tariff\": {\n    \"zoneKey\": \"SE:4022\",\n    \"countryCode\": \"SE\",\n    \"zoneNo\": 4022,\n    \"version\": 51,\n    \"status\": \"ACTIVE\",\n    \"timezone\": \"Europe/Stockholm\",\n    \"currency\": \"SEK\",\n    \"validFrom\": \"2026-11-21T23:53:50.421000+00:00\",\n    \"validTo\": null,\n    \"parkingTypesByChannel\": {\n      \"APP\": [\n        \"STREET\"\n      ],\n      \"ANPR\": [\n        \"GATED\"\n      ]\n    },\n    \"parkingFree\": true,\n    \"maxDailyPriceMinor\": 10196,\n    \"updatedAt\": \"2026-11-23T23:04:05.936000+00:00\"\n  }\n}\n\n## Consumidor C decide tipo de carga y comisión\n{\n  \"cityId\": \"SE-STO\",\n  \"cityName\": \"Stockholm\",\n  \"zones\": [\n    {\n      \"zoneKey\": \"SE:4021\",\n      \"name\": \"Södermalm Norte\",\n      \"status\": \"ACTIVE\",\n      \"zoneVersion\": 1,\n      \"tariff\": {\n        \"version\": 88,\n        \"currency\": \"SEK\",\n        \"parkingFree\": false,\n        \"maxDailyPriceMinor\": 10195,\n        \"status\": \"ACTIVE\"\n      },\n      \"decision\": {\n        \"chargeType\": \"APARCAMIENTO_MAS_CARGA\",\n        \"commissionTier\": \"ALTA\"\n      }\n    },\n    {\n      \"zoneKey\": \"SE:4022\",\n      \"name\": \"Södermalm Sur\",\n      \"status\": \"ACTIVE\",\n      \"zoneVersion\": 1,\n      \"tariff\": {\n        \"version\": 51,\n        \"currency\": \"SEK\",\n        \"parkingFree\": true,\n        \"maxDailyPriceMinor\": 10196,\n        \"status\": \"ACTIVE\"\n      },\n      \"decision\": {\n        \"chargeType\": \"SOLO_CARGA\",\n        \"commissionTier\": \"ALTA\"\n      }\n    }\n  ]\n}\n\n## Comprobaciones\n  ✔ Tarifas no tiene réplicas listas\n  ✔ Zonas responde la tarifa vigente de SE:4022 (10196)\n  ✔ El Consumidor C decide para las 2 zonas de Stockholm\n"}, {"name": "04 relectura", "text": "# 04 · Consumidor nuevo: relectura desde el offset 0 · 2026-11-23T23:04:23Z\n# Grupo de consumo nuevo + almacenamiento vacío: la vista se reconstruye sin llamar a ninguna API\n\nPod anterior: consumidor-c-676b999766-jcdt4 · pod nuevo: consumidor-c-5d45d8cccb-4qw87\nRollout terminado (pod nuevo listo): 1530 ms\nVista completa en el pod nuevo (5 tarifas, 5 zonas): 5295 ms desde el cambio de configuración\n\n{\n  \"api_calls_received\": 0,\n  \"events_published\": 0,\n  \"events_consumed\": 215,\n  \"stale_or_duplicate_skipped\": 2,\n  \"tombstones_applied\": 0,\n  \"publish_errors\": 0,\n  \"poison_messages_skipped\": 0,\n  \"tariff_view_size\": 5,\n  \"zone_view_size\": 5,\n  \"app\": \"consumidor-c\"\n}\n\n## Log del pod nuevo\n2026-11-23 23:04:19,423 consumidor-c INFO consumiendo pricing.state.zone-tariff.v1 con el grupo team-consumidor-c.pricing.state.zone-tariff.v1.rebuild-1795475058\n2026-11-23 23:04:19,434 consumidor-c INFO consumiendo topology.state.zone.v1 con el grupo team-consumidor-c.topology.state.zone.v1.rebuild-1795475058\n2026-11-23 23:04:22,487 consumidor-c INFO vista local vacía: relectura de pricing.state.zone-tariff.v1 particiones [0, 1, 2] desde el offset 0\n2026-11-23 23:04:22,498 consumidor-c INFO vista local vacía: relectura de topology.state.zone.v1 particiones [0, 1, 2] desde el offset 0\n\n## Comprobaciones\n  ✔ Es un pod nuevo\n  ✔ Reconstruyó 5 tarifas y 5 zonas\n  ✔ Leyó desde el tópico (events_consumed > 0) y no recibió llamadas\n"}, {"name": "05 tombstone", "text": "# 05 · Tombstone · 2026-11-23T23:04:27Z\n# DELETE /tariffs/CO:1102 -> mensaje con valor nulo; los consumidores borran la clave (la compactación la retirará)\n\n## Consumidor C tras el tombstone (318 ms)\n{\n  \"cityId\": \"CO-BOG\",\n  \"cityName\": \"Bogotá\",\n  \"zones\": [\n    {\n      \"zoneKey\": \"CO:1101\",\n      \"name\": \"Chapinero\",\n      \"status\": \"ACTIVE\",\n      \"zoneVersion\": 1,\n      \"tariff\": {\n        \"version\": 47,\n        \"currency\": \"COP\",\n        \"parkingFree\": false,\n        \"maxDailyPriceMinor\": 10198,\n        \"status\": \"ACTIVE\"\n      },\n      \"decision\": {\n        \"chargeType\": \"APARCAMIENTO_MAS_CARGA\",\n        \"commissionTier\": \"ESTANDAR\"\n      }\n    },\n    {\n      \"zoneKey\": \"CO:1102\",\n      \"name\": \"Usaquén\",\n      \"status\": \"ACTIVE\",\n      \"zoneVersion\": 1,\n      \"tariff\": null,\n      \"decision\": {\n        \"chargeType\": \"SIN_TARIFA\",\n        \"commissionTier\": null\n      }\n    }\n  ]\n}\n\n## Alta de nuevo (348 ms): versión antes de la baja = 50, versión nueva = 51\n\n## Comprobaciones\n  ✔ El Consumidor C quitó la tarifa de CO:1102\n  ✔ Aplicó un tombstone más\n  ✔ La zona sin tarifa queda como SIN_TARIFA\n  ✔ Al volver, la versión sigue creciendo (50 -> 51): nadie la descarta por vieja\n"}, {"name": "06 jerarquía", "text": "# 06 · Jerarquía Ciudad -> Zonas -> Tarifa (opción A+) · 2026-11-23T23:04:28Z\n# Dos streams de estado con un solo dueño cada uno; el Consumidor C los une por zoneKey y agrupa por cityId\n\n{\n  \"cities\": [\n    {\n      \"cityId\": \"CO-BOG\",\n      \"cityName\": \"Bogotá\",\n      \"zones\": [\n        {\n          \"zoneKey\": \"CO:1101\",\n          \"name\": \"Chapinero\",\n          \"status\": \"ACTIVE\",\n          \"zoneVersion\": 1,\n          \"tariff\": {\n            \"version\": 47,\n            \"currency\": \"COP\",\n            \"parkingFree\": false,\n            \"maxDailyPriceMinor\": 10198,\n            \"status\": \"ACTIVE\"\n          },\n          \"decision\": {\n            \"chargeType\": \"APARCAMIENTO_MAS_CARGA\",\n            \"commissionTier\": \"ESTANDAR\"\n          }\n        },\n        {\n          \"zoneKey\": \"CO:1102\",\n          \"name\": \"Usaquén\",\n          \"status\": \"ACTIVE\",\n          \"zoneVersion\": 1,\n          \"tariff\": {\n            \"version\": 51,\n            \"currency\": \"COP\",\n            \"parkingFree\": false,\n            \"maxDailyPriceMinor\": 1800000,\n            \"status\": \"ACTIVE\"\n          },\n          \"decision\": {\n            \"chargeType\": \"APARCAMIENTO_MAS_CARGA\",\n            \"commissionTier\": \"ESTANDAR\"\n          }\n        }\n      ]\n    },\n    {\n      \"cityId\": \"SE-STO\",\n      \"cityName\": \"Stockholm\",\n      \"zones\": [\n        {\n          \"zoneKey\": \"SE:4021\",\n          \"name\": \"Södermalm Norte\",\n          \"status\": \"ACTIVE\",\n          \"zoneVersion\": 1,\n          \"tariff\": {\n            \"version\": 88,\n            \"currency\": \"SEK\",\n            \"parkingFree\": false,\n            \"maxDailyPriceMinor\": 10195,\n            \"status\": \"ACTIVE\"\n          },\n          \"decision\": {\n            \"chargeType\": \"APARCAMIENTO_MAS_CARGA\",\n            \"commissionTier\": \"ALTA\"\n          }\n        },\n        {\n          \"zoneKey\": \"SE:4022\",\n          \"name\": \"Södermalm Sur\",\n          \"status\": \"ACTIVE\",\n          \"zoneVersion\": 1,\n          \"tariff\": {\n            \"version\": 51,\n            \"currency\": \"SEK\",\n            \"parkingFree\": true,\n            \"maxDailyPriceMinor\": 10196,\n            \"status\": \"ACTIVE\"\n          },\n          \"decision\": {\n            \"chargeType\": \"SOLO_CARGA\",\n            \"commissionTier\": \"ALTA\"\n          }\n        }\n      ]\n    },\n    {\n      \"cityId\": \"SE-GOT\",\n      \"cityName\": \"Göteborg\",\n      \"zones\": [\n        {\n          \"zoneKey\": \"SE:5101\",\n          \"name\": \"Centrum (Göteborg) 180427\",\n          \"status\": \"ACTIVE\",\n          \"zoneVersion\": 6,\n          \"tariff\": {\n            \"version\": 47,\n            \"currency\": \"SEK\",\n            \"parkingFree\": false,\n            \"maxDailyPriceMinor\": 10197,\n            \"status\": \"ACTIVE\"\n          },\n          \"decision\": {\n            \"chargeType\": \"APARCAMIENTO_MAS_CARGA\",\n            \"commissionTier\": \"ALTA\"\n          }\n        }\n      ]\n    }\n  ],\n  \"tariffsWaitingForZone\": []\n}\n\n## Comprobaciones\n  ✔ 3 ciudades y 5 zonas\n  ✔ Las 5 zonas tienen tarifa\n  ✔ El cambio de Zonas (nombre) llegó sin tocar Tarifas\n  ✔ Ninguna tarifa espera a su zona\n"}, {"name": "07 registry 409", "text": "# 07 · Registry: cambio incompatible rechazado (409) · 2026-11-23T23:04:29Z\n# POST directo al registry del clúster con el contrato sin currency (saltándose el CI)\n\n409 {\"message\":\"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible artifact: pricing.state.zone-tariff.v1-value [AVRO], num of incompatible diffs: {1}, list of diff types: [currency at /fields/6]\",\"error_code\":409}\n\n## Versiones del subject: antes [1] · después [1]\n\n## Primera barrera (CI) con el mismo archivo (código de salida 1)\n== streams/tarifas/zone-tariff-state\n  ok  v1 compatible (FULL_TRANSITIVE) -> id 1\n::error file=tests/contracts/zone-tariff-state-v2-breaking.avsc,title=Contrato::zone-tariff-state-v2-breaking.avsc es INCOMPATIBLE con las versiones anteriores bajo FULL_TRANSITIVE. Si el cambio es intencional, publique un tópico .v<major+1> con doble publicación. Registry: io.apicurio.registry.rules.violation.RuleViolationException: Incompatible artifact: ci-672490a7-pricing.state.zone-tariff.v1-value [AVRO], num of incompatible diffs: {1}, list of diff types: [currency at /fields/6]\n\nFALLÓ: 1 problema(s) de contrato.\n\n## Comprobaciones\n  ✔ El registry responde 409\n  ✔ El diagnóstico señala el campo: [currency at /fields/6]\n  ✔ La versión rota no se registró ([1] = [1])\n  ✔ El chequeo del CI falla\n  ✔ El CI señala el mismo campo\n"}, {"name": "08 evolución v2", "text": "# 08 · Evolución compatible v1 -> v2 (FULL_TRANSITIVE) · 2026-11-23T23:05:09Z\n# Stream desechable pricing.state.evo-180429.v1: claim v1, luego contract.version: 2 (maxSessionMinutes opcional con default)\n\nClaim con contrato v2 registrado en: 3849 ms\nNAME               TOPIC                         CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE\nevo-180429-state   pricing.state.evo-180429.v1   v2         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   40s\nNAME                                  STATUS     COMPLETIONS   DURATION   AGE\nevo-180429-state-contract-v2-98d67e   Complete   1/1           3s         8s\n\nVersiones del subject: [1,2]\n\n## Un productor escribe con v2; dos lectores leen el mismo mensaje\nschema id del mensaje: 3\nlector con el contrato v1 -> {'zoneKey': 'SE:4021', 'countryCode': 'SE', 'zoneNo': 4021, 'version': 1, 'status': 'ACTIVE', 'timezone': 'UTC', 'currency': 'SEK', 'validFrom': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc), 'validTo': None, 'parkingTypesByChannel': {}, 'parkingFree': False, 'maxDailyPriceMinor': 15000, 'updatedAt': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc)}\nlector con el contrato v2 -> {'zoneKey': 'SE:4021', 'countryCode': 'SE', 'zoneNo': 4021, 'version': 1, 'status': 'ACTIVE', 'timezone': 'UTC', 'currency': 'SEK', 'validFrom': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc), 'validTo': None, 'parkingTypesByChannel': {}, 'parkingFree': False, 'maxDailyPriceMinor': 15000, 'updatedAt': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc), 'maxSessionMinutes': 240}\n\n## Comprobaciones\n  ✔ El registry aceptó la v2 ([1,2])\n  ✔ El claim reporta contractVersion=v2 y contractRegistered=true\n  ✔ El productor publicó con v2 sin autorregistro\n  ✔ El lector v1 lee el mensaje v2 sin el campo nuevo\n  ✔ El lector v2 ve maxSessionMinutes=240\n"}, {"name": "09 sin autorregistro", "text": "# 09 · Sin autorregistro (auto.register.schemas=false) · 2026-11-23T23:05:22Z\n# Tarifas desplegado con un contrato que el registry no conoce; PUT SE:4021 maxDailyPriceMinor=35412\n\n2026-11-23 23:05:16,463 tarifas ERROR no se pudo publicar (el evento sigue en el outbox): The given schema does not match any schema under the subject pricing.state.zone-tariff.v1-value (HTTP status code 404, SR code 40403)\n\n## El evento NO se pierde: queda en el outbox\n{\n  \"api_calls_received\": 0,\n  \"events_published\": 0,\n  \"events_consumed\": 0,\n  \"stale_or_duplicate_skipped\": 0,\n  \"tombstones_applied\": 0,\n  \"publish_errors\": 1,\n  \"poison_messages_skipped\": 0,\n  \"tariffs_outbox_pending\": 1,\n  \"app\": \"tarifas\"\n}\n\n## Tras volver al contrato registrado: el relay publica lo pendiente (estado durable del productor, PVC)\n  \"events_published\": 1,\n  \"tariffs_outbox_pending\": 0,\nEl precio 35412 llegó al Consumidor C 402 ms después de restaurar\n\n## Comprobaciones\n  ✔ El serializador rechaza el contrato no registrado (40403)\n  ✔ El evento queda pendiente en el outbox\n  ✔ Tras restaurar, el outbox queda vacío\n  ✔ El cambio retenido llega al Consumidor C\n"}, {"name": "10 Kyverno", "text": "# 10 · Kyverno en la admisión · 2026-11-23T23:05:22Z\n# kubectl apply --dry-run=server de claims inválidos y de uno válido\n\n## tests/fixtures/invalid-stream-cost-center.yaml\n  Error from server: error when creating \"tests/fixtures/invalid-stream-cost-center.yaml\": admission webhook \"validate.kyverno.svc-fail\" denied the request: \n  resource EventStreamClaim/team-tarifas/stream-bad-cost-center was blocked due to the following policies \n  require-registered-cost-center:\n    cost-center-registered: El centro de costo CC-XXX-99 no está registrado (FinOps).\n\n## tests/fixtures/invalid-stream-domain.yaml\n  Error from server: error when creating \"tests/fixtures/invalid-stream-domain.yaml\": admission webhook \"validate.kyverno.svc-fail\" denied the request: \n  resource EventStreamClaim/team-zonas/stream-wrong-domain was blocked due to the following policies \n  eventstream-domain-ownership:\n    domain-belongs-to-owner: 'El dominio pricing no pertenece al equipo zonas. Cada dominio tiene un único escritor: publique en su propio dominio o consuma el stream del dueño.'\n\n## tests/fixtures/invalid-stream-namespace.yaml\n  Error from server: error when creating \"tests/fixtures/invalid-stream-namespace.yaml\": admission webhook \"validate.kyverno.svc-fail\" denied the request: \n  resource EventStreamClaim/team-parking-core/stream-wrong-namespace was blocked due to the following policies \n  namespace-matches-owner:\n    namespace-is-team-namespace: El EventStreamClaim debe crearse en el namespace team-tarifas, no en team-parking-core.\n\n## tests/fixtures/invalid-stream-pii.yaml\n  Error from server: error when creating \"tests/fixtures/invalid-stream-pii.yaml\": admission webhook \"validate.kyverno.svc-fail\" denied the request: \n  resource EventStreamClaim/team-tarifas/stream-with-pii was blocked due to the following policies \n  eventstream-no-pii-in-tvp:\n    deny-pii: 'El stream stream-with-pii declara datos personales (governance.pii=true). La TVP no los admite: publique solo identificadores no personales o abra un caso atípico con el Platform Team (fase 2: tokenización).'\n\n## tests/fixtures/valid-stream.yaml\n  eventstreamclaim.platform.parkglobal.io/valid-stream created (server dry run)\n\n## Comprobaciones\n  ✔ Rechazado por la regla cost-center-registered\n  ✔ Rechazado por la regla domain-belongs-to-owner\n  ✔ Rechazado por la regla namespace-is-team-namespace\n  ✔ Rechazado por la regla deny-pii\n  ✔ Un claim válido se admite\n"}, {"name": "11 lead time", "text": "# 11 · Lead time del Golden Path de eventos · 2026-11-23T23:05:23Z\n# 5 streams nuevos: desde aplicar el claim hasta cada hito (sin contar el CI del PR)\n\nstream                  topico_ms  contrato_ms   ready_ms\nlead-180523-1                1271         5037       5041\n\nNAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE\nlead-180523-1-state   pricing.state.lead-180523-1.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   5s\nNAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY\npricing.state.lead-180523-1.v1   events    3            1                    True\nNAME                                    DATA   AGE\npricing.state.lead-180523-1.v1-client   13     6s\n\nlead-180530-2                1312         5179      35623\n\nNAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE\nlead-180530-2-state   pricing.state.lead-180530-2.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   36s\nNAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY\npricing.state.lead-180530-2.v1   events    3            1                    True\nNAME                                    DATA   AGE\npricing.state.lead-180530-2.v1-client   13     35s\n\nlead-180608-3                1393         4649      35560\n\nNAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE\nlead-180608-3-state   pricing.state.lead-180608-3.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   36s\nNAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY\npricing.state.lead-180608-3.v1   events    3            1                    True\nNAME                                    DATA   AGE\npricing.state.lead-180608-3.v1-client   13     36s\n\nlead-180646-4                1418         6842      33626\n\nNAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE\nlead-180646-4-state   pricing.state.lead-180646-4.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   33s\nNAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY\npricing.state.lead-180646-4.v1   events    3            1                    True\nNAME                                    DATA   AGE\npricing.state.lead-180646-4.v1-client   13     34s\n\nlead-180721-5                3400         6709      35486\n\nNAME                  TOPIC                            CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE\nlead-180721-5-state   pricing.state.lead-180721-5.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   35s\nNAME                             CLUSTER   PARTITIONS   REPLICATION FACTOR   READY\npricing.state.lead-180721-5.v1   events    3            1                    True\nNAME                                    DATA   AGE\npricing.state.lead-180721-5.v1-client   13     33s\n\n\nClaim Ready: mínimo 5041 ms · mediana 35486 ms · máximo 35623 ms\nEl tópico y el contrato quedan listos en segundos. El Ready del claim es bimodal (unos 5 s o unos 35 s) porque\nprovider-kubernetes observa el estado del KafkaTopic por sondeo: a veces lo ve al instante y a veces en el siguiente ciclo.\n\n## Comprobaciones\n  ✔ Las 5 muestras quedaron Ready\n  ✔ Todas en menos de 60 s\n"}, {"name": "12 CI barrera 1", "text": "# 12 · Barrera 1 (CI) en local · 2026-11-23T23:03:46Z\n# make events-test: kyverno test + validate-streams + check_contracts contra Apicurio efímero + caso incompatible\n\nkyverno test platform/kyverno/tests\nLoading test  ( platform/kyverno/tests/kyverno-test.yaml ) ...\n  Loading values/variables ...\n  Loading policies ...\n  Warning: platform/kyverno/policies/require-registered-cost-center.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/\n  Warning: platform/kyverno/policies/namespace-matches-owner.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/\n  Warning: platform/kyverno/policies/restrict-size-by-environment.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/\n  Warning: platform/kyverno/policies/limit-claims-per-namespace.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/\n  Warning: platform/kyverno/policies/eventstream-domain-ownership.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/\n  Warning: platform/kyverno/policies/eventstream-no-pii-in-tvp.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/\n  Loading resources ...\n  Loading exceptions ...\n  Applying 6 policies to 10 resources with 0 exceptions ...\n  Checking results ...\n\n│──────────│────────────────────────────────│─────────────────────────────│───────────────────────────────────────────────────────────────────────────────────────────│────────│────────│\n│ \u001b[40;32mID (18) \u001b[0m │ \u001b[40;32mPOLICY                        \u001b[0m │ \u001b[40;32mRULE                       \u001b[0m │ \u001b[40;32mRESOURCE                                                                                 \u001b[0m │ \u001b[40;32mRESULT\u001b[0m │ \u001b[40;32mREASON\u001b[0m │\n│──────────│────────────────────────────────│─────────────────────────────│───────────────────────────────────────────────────────────────────────────────────────────│────────│────────│\n│ 1        │ require-registered-cost-center │ require-owner               │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │\n│ 2        │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │\n│ 3        │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │\n│ 4        │ restrict-size-by-environment   │ only-small-in-dev           │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │\n│ 5        │ limit-claims-per-namespace     │ max-3-claims                │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │\n│ 6        │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/bad-cost-center-db        │ Pass   │ Ok     │\n│ 7        │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-payments-core/wrong-namespace-db       │ Pass   │ Ok     │\n│ 8        │ restrict-size-by-environment   │ only-small-in-dev           │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/medium-in-dev-db          │ Pass   │ Ok     │\n│ 9        │ require-registered-cost-center │ require-owner               │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/no-owner-db               │ Pass   │ Ok     │\n│ 10       │ require-registered-cost-center │ require-owner               │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │\n│ 11       │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │\n│ 12       │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │\n│ 13       │ eventstream-domain-ownership   │ domain-belongs-to-owner     │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │\n│ 14       │ eventstream-no-pii-in-tvp      │ deny-pii                    │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │\n│ 15       │ eventstream-domain-ownership   │ domain-belongs-to-owner     │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-zonas/stream-wrong-domain           │ Pass   │ Ok     │\n│ 16       │ eventstream-no-pii-in-tvp      │ deny-pii                    │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/stream-with-pii             │ Pass   │ Ok     │\n│ 17       │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-parking-core/stream-wrong-namespace │ Pass   │ Ok     │\n│ 18       │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/stream-bad-cost-center      │ Pass   │ Ok     │\n│──────────│────────────────────────────────│─────────────────────────────│───────────────────────────────────────────────────────────────────────────────────────────│────────│────────│\n\n\nTest Summary: 18 tests passed and 0 tests failed\n\n./scripts/validate-streams.sh\nEvaluando 2 stream(s): streams/tarifas/zone-tariff-state/eventstreamclaim.yaml streams/zonas/zone-state/eventstreamclaim.yaml\n\nApplying 8 policy rule(s) to 2 resource(s)...\n\npolicy add-finops-labels applied to team-tarifas/EventStreamClaim/zone-tariff-state:\napiVersion: platform.parkglobal.io/v1alpha1\nkind: EventStreamClaim\nmetadata:\n    labels:\n        parkglobal.io/cost-center: CC-PRC-01\n        parkglobal.io/team: tarifas\n    name: zone-tariff-state\n    namespace: team-tarifas\nspec:\n    consumers:\n        - team: zonas\n        - team: consumidor-c\n    contract:\n        format: avro\n        version: 1\n    domain: pricing\n    entity: zone-tariff\n    environment: dev\n    governance:\n        description: Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).\n        pii: false\n        sloP99Seconds: 5\n    key:\n        format: <countryCode>:<zoneNo>\n        pattern: ^[A-Z]{2}:[0-9]+$\n    majorVersion: 1\n    owner:\n        costCenter: CC-PRC-01\n        team: tarifas\n    profile: small\n    type: state\n\n---\n\n\nMutation:\nMutation has been applied successfully.\npolicy add-finops-labels applied to team-zonas/EventStreamClaim/zone-state:\napiVersion: platform.parkglobal.io/v1alpha1\nkind: EventStreamClaim\nmetadata:\n    labels:\n        parkglobal.io/cost-center: CC-TOP-01\n        parkglobal.io/team: zonas\n    name: zone-state\n    namespace: team-zonas\nspec:\n    consumers:\n        - team: consumidor-c\n    contract:\n        format: avro\n        version: 1\n    domain: topology\n    entity: zone\n    environment: dev\n    governance:\n        description: Estado público de cada zona de parqueo, con referencia a su ciudad (cityId).\n        pii: false\n        sloP99Seconds: 5\n    key:\n        format: <countryCode>:<zoneNo>\n        pattern: ^[A-Z]{2}:[0-9]+$\n    majorVersion: 1\n    owner:\n        costCenter: CC-TOP-01\n        team: zonas\n    profile: small\n    type: state\n\n---\n\n\nMutation:\nMutation has been applied successfully.\npass: 12, fail: 0, warn: 0, error: 0, skip: 0 \n./scripts/contracts/ci-registry.sh apicurio/apicurio-registry:3.3.4\nregistry efímero listo (:18080)\npython3 scripts/contracts/check_contracts.py --registry http://localhost:18080/apis/ccompat/v7\n== streams/tarifas/zone-tariff-state\n  ok  v1 compatible (FULL_TRANSITIVE) -> id 1\n== streams/zonas/zone-state\n  ok  v1 compatible (FULL_TRANSITIVE) -> id 2\n\nOK: contratos válidos, inmutables y compatibles.\n--- un cambio incompatible DEBE fallar:\nOK: v2 sin currency rechazada por FULL_TRANSITIVE\n"}, {"name": "resumen", "text": "# Resumen de events-demo.sh · 2026-11-23T23:07:59Z · escenarios: 01 02 03 04 05 06 07 08 09 10 11\n# 48 comprobaciones correctas, 0 fallidas\n\n✔  01  Los 2 claims del piloto están Ready\n✔  01  Los 2 tópicos son compactados\n✔  01  pricing.state.zone-tariff.v1-value: FULL_TRANSITIVE\n✔  01  pricing.state.zone-tariff.v1-value: versiones registradas = las del repositorio ([1])\n✔  01  topology.state.zone.v1-value: FULL_TRANSITIVE\n✔  01  topology.state.zone.v1-value: versiones registradas = las del repositorio ([1])\n✔  01  El Consumidor C recibió la configuración de los 2 streams\n✔  02  El cambio llegó a las dos vistas locales\n✔  02  0 llamadas a la API de Tarifas por el cambio\n✔  02  zonas midió los 200 cambios de la ráfaga\n✔  02  zonas cumple el SLO (p99 < 5000 ms)\n✔  02  consumidor-c midió los 200 cambios de la ráfaga\n✔  02  consumidor-c cumple el SLO (p99 < 5000 ms)\n✔  03  Tarifas no tiene réplicas listas\n✔  03  Zonas responde la tarifa vigente de SE:4022 (10196)\n✔  03  El Consumidor C decide para las 2 zonas de Stockholm\n✔  04  Es un pod nuevo\n✔  04  Reconstruyó 5 tarifas y 5 zonas\n✔  04  Leyó desde el tópico (events_consumed > 0) y no recibió llamadas\n✔  05  El Consumidor C quitó la tarifa de CO:1102\n✔  05  Aplicó un tombstone más\n✔  05  La zona sin tarifa queda como SIN_TARIFA\n✔  05  Al volver, la versión sigue creciendo (50 -> 51): nadie la descarta por vieja\n✔  06  3 ciudades y 5 zonas\n✔  06  Las 5 zonas tienen tarifa\n✔  06  El cambio de Zonas (nombre) llegó sin tocar Tarifas\n✔  06  Ninguna tarifa espera a su zona\n✔  07  El registry responde 409\n✔  07  El diagnóstico señala el campo: [currency at /fields/6]\n✔  07  La versión rota no se registró ([1] = [1])\n✔  07  El chequeo del CI falla\n✔  07  El CI señala el mismo campo\n✔  08  El registry aceptó la v2 ([1,2])\n✔  08  El claim reporta contractVersion=v2 y contractRegistered=true\n✔  08  El productor publicó con v2 sin autorregistro\n✔  08  El lector v1 lee el mensaje v2 sin el campo nuevo\n✔  08  El lector v2 ve maxSessionMinutes=240\n✔  09  El serializador rechaza el contrato no registrado (40403)\n✔  09  El evento queda pendiente en el outbox\n✔  09  Tras restaurar, el outbox queda vacío\n✔  09  El cambio retenido llega al Consumidor C\n✔  10  Rechazado por la regla cost-center-registered\n✔  10  Rechazado por la regla domain-belongs-to-owner\n✔  10  Rechazado por la regla namespace-is-team-namespace\n✔  10  Rechazado por la regla deny-pii\n✔  10  Un claim válido se admite\n✔  11  Las 5 muestras quedaron Ready\n✔  11  Todas en menos de 60 s\n"}], "rubric": [{"crit": "PoC: Implementación y Evidencia (Gestión de Eventos) · /20", "mine": true, "items": [["Herramientas OSS para gestionar eventos", "Strimzi, Apicurio, Crossplane, provider-kubernetes, Kyverno: evidence/p2/01"], ["Abstracción de mensajería", "EventStreamClaim + ConfigMap <tópico>-client; el servicio solo hace envFrom (apps/ecst-demo/k8s)"], ["PoC altamente funcional", "11 escenarios con make events-demo: 48 comprobaciones correctas y 0 fallidas (evidence/p2/resumen.txt)"], ["Demostración de la reducción de carga", "claim Ready en 5,0–35,6 s (mediana 35,5 s); 7 campos obligatorios + contrato; CI con diagnóstico por campo"], ["Video para la sustentación", "Kit en docs/p2/video: guion, láminas y demo guiada que comprueba cada paso"]]}, {"crit": "Contratos de Datos y Gobernanza (Schema Registry) · /15", "mine": false, "items": [["Contrato formal Avro", "streams/*/*/schemas/v1.avsc (docs/p2/contratos.md)"], ["Política de compatibilidad precisa", "FULL_TRANSITIVE, justificada por el orden de despliegue y la relectura del tópico compactado"], ["Ejemplo claro de protección", "Sin currency → CI rojo y 409; campo opcional → aceptado, escrito con v2 y leído por un lector v1 (evidence/p2/07, 08)"], ["Actualizar la diapositiva 6 (Juan)", "JSON Schema → Avro con el spike como evidencia (ADR-005)"]]}, {"crit": "Migración a ECST · /15", "mine": false, "items": [["Reducción de carga en las APIs síncronas", "0 llamadas a la API de Tarifas por cambio (evidence/p2/02)"], ["Desacoplamiento temporal", "Tarifas caído → los consumidores siguen respondiendo (evidence/p2/03)"], ["Estado reconstruible", "relectura desde el offset 0 en 5,3 s (evidence/p2/04)"]]}, {"crit": "Insumos para Interacción, PaaP y Tablero", "mine": false, "items": [["Collaboration → X-as-a-Service", "PR auto-integrado; los casos atípicos (PII, deltas) vuelven a Collaboration"], ["Curación 80/20", "Solo type: state, sin PII, Avro (impuesto por Kyverno y la XRD)"], ["Métricas leading", "lead time por stream con desglose por hito (lead-time-streams.csv), p99 de entrega, incompatibles bloqueados"]]}]};
+
+/* ---------- tema y pestañas ---------- */
+const root = document.documentElement;
+const store = { get(k){ try{return localStorage.getItem(k)}catch(e){return null} }, set(k,v){ try{localStorage.setItem(k,v)}catch(e){} } };
+const savedTheme = store.get("pg-theme"); if (savedTheme) root.dataset.theme = savedTheme;
+document.getElementById("themeBtn").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark"; store.set("pg-theme", root.dataset.theme);
+};
+const tabs = [...document.querySelectorAll("nav.tabs button")];
+function show(id){
+  tabs.forEach(b => b.setAttribute("aria-selected", b.dataset.tab === id));
+  document.querySelectorAll("section.panel").forEach(s => s.classList.toggle("active", s.id === id));
+  if (history.replaceState) history.replaceState(null, "", "#" + id);
+  window.scrollTo({top:0});
+}
+tabs.forEach(b => b.onclick = () => show(b.dataset.tab));
+show((location.hash || "#resumen").slice(1) in {resumen:1,viabilidad:1,arquitectura:1,flujo:1,contratos:1,decisiones:1,evidencia:1,rubrica:1,reproducir:1} ? location.hash.slice(1) || "resumen" : "resumen");
+
+function seg(id, cb){
+  const el = document.getElementById(id);
+  el.querySelectorAll("button").forEach(b => b.onclick = () => {
+    el.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); cb(b.dataset);
+  });
+}
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const SVG = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, parent){ const e = document.createElementNS(SVG, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function box(svg, x, y, w, h, label, sub, cls){
+  const g = svgEl("g", {class: "node " + (cls||"")}, svg);
+  svgEl("rect", {x, y, width:w, height:h, rx:8, class:"box"}, g);
+  const t = svgEl("text", {x: x + w/2, y: y + (sub ? h/2 - 3 : h/2 + 4), "text-anchor":"middle", "font-weight":600}, g); t.textContent = label;
+  if (sub){ const s = svgEl("text", {x: x + w/2, y: y + h/2 + 12, "text-anchor":"middle", class:"tag"}, g); s.textContent = sub; }
+  return g;
+}
+function arrow(svg){ const d = svgEl("defs", {}, svg);
+  ["m","mh","mb"].forEach((id,i)=>{ const m = svgEl("marker",{id:id+svg.id,viewBox:"0 0 10 10",refX:9,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"},d);
+    svgEl("path",{d:"M0,0 L10,5 L0,10 z",fill:["var(--muted)","var(--accent)","var(--bad)"][i]},m); }); }
+function line(svg, x1, y1, x2, y2, cls, label){
+  const p = svgEl("path", {d:`M${x1},${y1} L${x2},${y2}`, class:"edge " + (cls||""), "marker-end":`url(#${cls==="hot"?"mh":cls==="bad"?"mb":"m"}${svg.id})`}, svg);
+  if (label){ const t = svgEl("text",{x:(x1+x2)/2 + 4, y:(y1+y2)/2 - 5, class:"tag"}, svg); t.textContent = label; }
+  return p;
+}
+
+/* ---------- viabilidad: granularidad ---------- */
+const GRAN = {
+  entidad: {rows:[["Escritores por clave","1 (Tarifas o Zonas)","ok"],["Tamaño del mensaje","una zona (~200 B)","ok"],["Orden","por zona","ok"],["Evolución","independiente por dominio","ok"],["Coherencia con el PPTX","total","ok"],["Costo para la TVP","bajo","ok"]]},
+  ciudad: {rows:[["Escritores por clave","2+ (colisión) o un agregador nuevo","bad"],["Tamaño del mensaje","toda la ciudad (riesgo > 1 MB)","bad"],["Orden","por ciudad (partición caliente)","bad"],["Evolución","acoplada: un cambio de tarifa versiona ciudades","bad"],["Coherencia con el PPTX","contradice Tarifas → Zonas","bad"],["Patrón","riesgo de deltas o cadena de eventos","bad"]]},
+  derivada: {rows:[["Escritores por clave","1 (el procesador)","ok"],["Tamaño del mensaje","toda la ciudad","warn"],["Orden","por ciudad","warn"],["Evolución","depende de 2 fuentes","warn"],["Coherencia con el PPTX","parcial","warn"],["Costo para la TVP","alto (stream processing, Nivel 2)","bad"]]},
+};
+function drawGran(k){
+  const svg = document.getElementById("granSvg"); svg.innerHTML = ""; arrow(svg);
+  if (k === "entidad"){
+    box(svg,20,30,130,46,"Tarifas","dueño pricing"); box(svg,20,150,130,46,"Zonas","dueño topology");
+    box(svg,200,30,150,46,"zone-tariff.v1","clave SE:4021"); box(svg,200,150,150,46,"zone.v1","clave SE:4021 · cityId");
+    box(svg,390,90,110,56,"Consumidor C","une por clave");
+    line(svg,150,53,198,53,"hot"); line(svg,150,173,198,173,"hot"); line(svg,350,58,388,108,"hot"); line(svg,350,168,388,132,"hot");
+    svgEl("text",{x:260,y:235,"text-anchor":"middle",class:"tag"},svg).textContent="Ciudad → Zona → Tarifa se compone en la vista local";
+  } else if (k === "ciudad"){
+    box(svg,20,30,130,46,"Tarifas","escribe tarifas"); box(svg,20,150,130,46,"Zonas","escribe zonas");
+    box(svg,200,80,150,66,"city.v1","{ zonas:[ {tarifas:[…]} ] }");
+    box(svg,390,90,110,46,"Consumidores");
+    line(svg,150,53,198,100,"bad","foto parcial"); line(svg,150,173,198,128,"bad","foto parcial"); line(svg,350,113,388,113,"");
+    svgEl("text",{x:260,y:235,"text-anchor":"middle",class:"tag"},svg).textContent="En un tópico compactado gana la última escritura: se pierde estado";
+  } else {
+    box(svg,10,30,110,46,"Tarifas"); box(svg,10,150,110,46,"Zonas");
+    box(svg,150,30,120,46,"zone-tariff.v1"); box(svg,150,150,120,46,"zone.v1");
+    box(svg,300,90,100,56,"Procesador","KTable join"); box(svg,420,90,90,56,"city-view","derivada");
+    line(svg,120,53,148,53,"hot"); line(svg,120,173,148,173,"hot"); line(svg,270,58,298,108,""); line(svg,270,168,298,132,""); line(svg,400,118,418,118,"");
+    svgEl("text",{x:260,y:235,"text-anchor":"middle",class:"tag"},svg).textContent="Legítimo como read model, pero exige stream processing (fuera de la TVP)";
+  }
+  document.getElementById("granTable").innerHTML = "<tr><th>Criterio</th><th>Resultado</th></tr>" +
+    GRAN[k].rows.map(r => `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[2]==="ok"?"✓":r[2]==="bad"?"✗":"◐"}</span> ${esc(r[1])}</td></tr>`).join("");
+}
+seg("granSeg", d => drawGran(d.g)); drawGran("entidad");
+
+/* ---------- arquitectura ---------- */
+const ARCH = [
+  {id:"bs",lane:0,x:40,w:200,t:"Backstage",s:"plantilla + catálogo AsyncAPI",info:"Formulario de 11 campos (7 obligatorios) más el contrato v1. Genera el claim, <code>schemas/v1.avsc</code>, <code>kustomization.yaml</code> y la ficha API (AsyncAPI) con dueño, SLO y PII.",eq:"Backstage existente",path:"backstage/templates/event-stream-claim/"},
+  {id:"gh",lane:1,x:20,w:140,t:"GitHub PR",s:"stream/<entidad>-state",info:"El PR reemplaza el ticket y es auditable. Un PR <code>stream/*</code> solo puede tocar <code>streams/</code>.",eq:"GitHub",path:".github/workflows/validate-and-merge-streams.yaml"},
+  {id:"ci",lane:1,x:180,w:200,t:"CI · barrera 1",s:"Kyverno + Apicurio efímero",info:"Políticas, estructura, inmutabilidad de versiones, catálogo semántico y FULL_TRANSITIVE contra un contenedor de servicio con la misma imagen del registry. Auto-merge si todo pasa.",eq:"GitHub Actions (runners propios)",path:"scripts/contracts/check_contracts.py"},
+  {id:"ar",lane:1,x:400,w:150,t:"Argo CD",s:"ApplicationSet streams",info:"Una Application por <code>streams/&lt;team&gt;/&lt;stream&gt;</code>; kustomize genera el ConfigMap del contrato desde los .avsc.",eq:"Argo CD existente",path:"platform/argocd/streams-appset.yaml"},
+  {id:"ky",lane:2,x:20,w:150,t:"Kyverno",s:"admisión · barrera 2",info:"Escritor único por dominio, sin PII en la TVP, namespace del dueño, centro de costo y etiquetas FinOps. Son las mismas políticas que en el CI.",eq:"Kyverno",path:"platform/kyverno/policies/eventstream-*.yaml"},
+  {id:"xrd",lane:2,x:190,w:170,t:"EventStreamClaim",s:"XRD v1alpha1",info:"El contrato de la Platform API: dominio, entidad, clave, perfil, contrato, gobierno y consumidores. Expone <code>status.topic/subject/contractVersion</code>.",eq:"Mismo patrón que DatabaseClaim y APIClaim",path:"platform/crossplane/xrd-eventstreamclaim.yaml"},
+  {id:"cmp",lane:2,x:380,w:200,t:"Composition",s:"strimzi-apicurio",info:"Compone un Object → KafkaTopic compactado, el Job registrador (v1..vN, FULL_TRANSITIVE y metadatos) y la configuración de cliente para el dueño y cada consumidor. Ready = tópico ∧ contrato.",eq:"eventstream-msk-apicurio (provider-kafka) en AWS",path:"platform/crossplane/composition-eventstream-strimzi-apicurio.yaml"},
+  {id:"pk",lane:2,x:600,w:140,t:"provider-kubernetes",s:"RBAC mínimo",info:"Crea recursos fuera del namespace del XR (KafkaTopic en <code>kafka</code> y ConfigMaps en los namespaces consumidores). Solo tiene permisos sobre kafkatopics y configmaps.",eq:"—",path:"platform/crossplane/provider-kubernetes.yaml"},
+  {id:"st",lane:3,x:60,w:240,t:"Strimzi · Kafka 4.3.1",s:"KRaft · auto.create=false",info:"Broker de la PoC. Los tópicos solo nacen por el Golden Path.",eq:"Amazon MSK (1 clúster por región)",path:"platform/events/kafka-cluster.yaml"},
+  {id:"ap",lane:3,x:360,w:260,t:"Apicurio Registry 3.3.4",s:"ccompat + v3 · PostgreSQL (DatabaseClaim)",info:"API compatible con Confluent para los serializadores; API v3 para metadatos de catálogo. Su base se pidió con el Golden Path del P1 (dogfooding).",eq:"Registry de 2018 solo Avro → reemplazo",path:"platform/registry/"},
+  {id:"t",lane:4,x:30,w:180,t:"Tarifas",s:"outbox → zone-tariff.v1",info:"Guarda la tarifa y la fila de outbox en una sola transacción; un relay publica tras el commit. Sin espera fija de 5 s.",eq:"Servicio de Tarifas",path:"apps/ecst-demo/ecst_demo.py"},
+  {id:"z",lane:4,x:280,w:180,t:"Zonas",s:"vista local · zone.v1",info:"Consume tarifas en una vista local y publica ZoneState (con cityId). Responde sin llamar a Tarifas ni a Core.",eq:"Servicio de Zonas",path:"apps/ecst-demo/k8s/zonas.yaml"},
+  {id:"c",lane:4,x:530,w:200,t:"Consumidor C",s:"Ciudad → Zonas → Tarifa",info:"Une dos streams por clave, agrupa por cityId y decide tipo de carga y comisión sin llamadas síncronas.",eq:"Consumidor C",path:"apps/ecst-demo/k8s/consumidor-c.yaml"},
+];
+const LANES = ["DESARROLLADOR","INTEGRACIÓN Y ENTREGA","CONTROL PLANE · PLATFORM API","RECURSOS","EQUIPOS STREAM-ALIGNED"];
+const ARCH_EDGES = [["bs","gh"],["gh","ci"],["ci","ar"],["ar","ky"],["ky","xrd"],["xrd","cmp"],["cmp","pk"],["pk","st"],["cmp","ap"],["t","st"],["z","st"]];
+(function drawArch(){
+  const svg = document.getElementById("archSvg"); arrow(svg); const pos = {};
+  LANES.forEach((l,i)=>{ svgEl("rect",{x:4,y:6+i*92,width:752,height:84,rx:10,class:"lane"},svg); const t=svgEl("text",{x:14,y:22+i*92,class:"lanelabel"},svg); t.textContent=l; });
+  ARCH.forEach(n => pos[n.id] = {x:n.x, y:30+n.lane*92, w:n.w, h:50});
+  ARCH_EDGES.forEach(([a,b]) => { const A=pos[a], B=pos[b];
+    let x1=A.x+A.w/2, y1=A.y+A.h, x2=B.x+B.w/2, y2=B.y;
+    if (A.y===B.y){ x1=A.x+A.w; y1=A.y+A.h/2; x2=B.x; y2=B.y+B.h/2; }
+    if (A.y>B.y){ y1=A.y; y2=B.y+B.h; }
+    line(svg,x1,y1,x2,y2,""); });
+  ARCH.forEach(n => { const p=pos[n.id]; const g = box(svg,p.x,p.y,p.w,p.h,n.t,n.s); g.dataset.id=n.id;
+    g.setAttribute("tabindex","0"); g.setAttribute("role","button");
+    const act = () => { svg.querySelectorAll(".node").forEach(x=>x.classList.remove("sel")); g.classList.add("sel");
+      document.getElementById("archInfo").innerHTML = `<span class="pill acc">${esc(LANES[n.lane])}</span><h3>${esc(n.t)}</h3><p>${n.info}</p><p class="muted"><b>En ParkGlobal:</b> ${esc(n.eq)}</p><p class="muted"><b>Repositorio:</b> <code>${esc(n.path)}</code></p>`; };
+    g.onclick = act; g.onkeydown = e => { if (e.key==="Enter"||e.key===" "){ e.preventDefault(); act(); } }; });
+})();
+
+/* ---------- flujo ---------- */
+const FN = {T:{x:20,y:40,w:120,t:"Tarifas"},K:{x:250,y:40,w:150,t:"Kafka (compactado)"},Z:{x:500,y:40,w:120,t:"Zonas"},C:{x:500,y:240,w:120,t:"Consumidor C"},CO:{x:250,y:240,w:150,t:"Monolito Core"},CA:{x:20,y:240,w:120,t:"Caché tarifas"},API:{x:20,y:140,w:120,t:"API Tarifas"}};
+const FLOWS = {
+  tobe:{note:"0 llamadas síncronas",steps:[
+    ["T",null,"Tarifas guarda la tarifa y la fila de outbox en una sola transacción.",0],
+    ["T","K","El relay publica la foto completa de ZoneTariffState (clave SE:4021) tras el commit.",0],
+    ["K","Z","Zonas hace upsert en su vista local si la versión es mayor.",0],
+    ["K","C","El Consumidor C hace upsert, une con ZoneState y decide tipo de carga y comisión.",0],
+    [null,null,`Listo: p99 medido de ${DATA.kpis.p99} ms en ${DATA.kpis.n} cambios y 0 llamadas a la API de Tarifas.`,0]]},
+  asis:{note:"≥4 llamadas síncronas por cambio",steps:[
+    ["T","CA","Tarifas guarda y publica a la caché por un tópico interno.",0],
+    ["T","K","Espera 5 s fijos y publica el aviso «tarifa cambió» (clave = id de petición).",0],
+    ["K","Z","Zonas recibe el aviso, que no dice qué cambió…",0],
+    ["Z","CO","① Zonas llama a Core, que enruta según la zona.",1],
+    ["CO","CA","② Core pregunta a la caché de tarifas.",1],
+    ["K","C","El Consumidor C recibe el mismo aviso…",0],
+    ["C","Z","③ Llama a la API de Zonas para resolver la zona.",1],
+    ["C","API","④ Llama a la API de Tarifas para leer la tarifa completa. Si algo falla, descarta el cambio.",1]]},
+  down:{note:"disponibilidad recuperada",steps:[
+    ["T",null,"Tarifas cae (kubectl scale --replicas=0).",0],
+    [null,null,"No se publican cambios nuevos, pero el estado vigente ya está en las vistas locales.",0],
+    ["Z",null,"Zonas responde GET /zones/SE:4022 con su vista local: HTTP 200.",0],
+    ["C",null,"El Consumidor C sigue decidiendo tipo de carga y comisión: HTTP 200.",0]]},
+  replay:{note:"relectura desde el offset 0",steps:[
+    ["C",null,"Pod nuevo, vista vacía y grupo de consumo nuevo.",0],
+    ["K","C","Rebobina cada partición asignada a OFFSET_BEGINNING.",0],
+    ["K","C","Lee la foto más reciente por clave (la compactación retiró las antiguas).",0],
+    [null,null,`Vista completa (5 zonas, 5 tarifas) en ${DATA.kpis.replay} s, sin pedirle datos a ninguna API.`,0]]},
+};
+let flowKey="tobe", flowIdx=-1, playing=null;
+function drawFlow(){
+  const svg=document.getElementById("flowSvg"); svg.innerHTML=""; arrow(svg);
+  const f=FLOWS[flowKey]; const used=new Set(); f.steps.forEach(s=>{if(s[0])used.add(s[0]); if(s[1])used.add(s[1]);});
+  if (flowKey!=="asis"){ ["T","K","Z","C"].forEach(k=>used.add(k)); }
+  let calls=0;
+  for (const k of used){ const n=FN[k]; const g=box(svg,n.x,n.y,n.w,46,n.t,"",""); if (flowKey==="down"&&k==="T"&&flowIdx>=0) g.style.opacity=.35; }
+  f.steps.forEach((s,i)=>{ if(!s[0]||!s[1]||i>flowIdx) return; const A=FN[s[0]],B=FN[s[1]];
+    const ax=A.x+A.w/2, ay=A.y+23, bx=B.x+B.w/2, by=B.y+23;
+    const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ox=dx/L, oy=dy/L;
+    const sx=ax+ox*Math.min(A.w/2,60), sy=ay+oy*26, ex=bx-ox*Math.min(B.w/2,60), ey=by-oy*26;
+    line(svg,sx,sy,ex,ey,s[3]?"bad":"hot", s[3]?"REST":""); if (s[3]) calls++;
+    if (i===flowIdx){ const c=svgEl("circle",{r:6,class:"pkt"+(s[3]?" bad":"")},svg);
+      const an=svgEl("animateMotion",{dur:"0.9s",repeatCount:"1",fill:"freeze",path:`M${sx},${sy} L${ex},${ey}`},c); an.beginElement&&setTimeout(()=>an.beginElement(),10); } });
+  document.getElementById("callCount").textContent="Llamadas síncronas: "+calls;
+  document.getElementById("callCount").className="pill "+(calls?"bad":"ok");
+  document.getElementById("flowNote").textContent=f.note;
+  document.getElementById("flowSteps").innerHTML=f.steps.map((s,i)=>`<div class="step ${i<=flowIdx?"on":""}"><div class="n">${i+1}</div><div>${esc(s[2])}</div></div>`).join("");
+  document.getElementById("flowPrev").disabled=flowIdx<0; document.getElementById("flowNext").disabled=flowIdx>=f.steps.length-1;
+}
+document.getElementById("flowNext").onclick=()=>{ flowIdx=Math.min(flowIdx+1,FLOWS[flowKey].steps.length-1); drawFlow(); };
+document.getElementById("flowPrev").onclick=()=>{ flowIdx=Math.max(flowIdx-1,-1); drawFlow(); };
+document.getElementById("flowPlay").onclick=()=>{ clearInterval(playing); flowIdx=-1; drawFlow();
+  playing=setInterval(()=>{ if(flowIdx>=FLOWS[flowKey].steps.length-1){clearInterval(playing);return;} flowIdx++; drawFlow(); },1300); };
+seg("flowSeg", d=>{ clearInterval(playing); flowKey=d.f; flowIdx=-1; drawFlow(); }); drawFlow();
+
+/* ---------- contratos ---------- */
+function typeStr(t){ if (typeof t==="string") return t; if (Array.isArray(t)) return t.map(typeStr).join(" | ");
+  if (t.logicalType) return t.logicalType; if (t.type==="enum") return "enum{"+t.symbols.join(",")+"}"; if (t.type==="map") return "map<"+typeStr(t.values)+">";
+  if (t.type==="array") return "array<"+typeStr(t.items)+">"; return t.type; }
+function fieldsTable(fields, marks){ marks=marks||{};
+  return "<tr><th>Campo</th><th>Tipo</th><th>Default</th></tr>"+fields.map(f=>`<tr class="field-row ${marks[f.name]||""}"><td>${esc(f.name)}</td><td class="mono">${esc(typeStr(f.type))}</td><td>${"default" in f ? esc(JSON.stringify(f.default)) : '<span class="muted">—</span>'}</td></tr>`).join(""); }
+function showSchema(k){ const s = k==="zt" ? DATA.zt : DATA.zs;
+  document.getElementById("schemaTable").innerHTML = fieldsTable(s.fields);
+  document.getElementById("schemaRaw").textContent = JSON.stringify(s,null,2); }
+seg("schemaSeg", d=>showSchema(d.s)); showSchema("zt");
+const EVO = {
+  compat:{schema:DATA.v2c, ok:true, msg:`✅ Aceptado por FULL_TRANSITIVE. El Job registra la v2 (escenario 08: ${DATA.kpis.v2} s, en un stream desechable). Probado: un productor escribe con v2 y un lector con el contrato v1 lee el mismo mensaje sin el campo nuevo.`},
+  breaking:{schema:DATA.v2b, ok:false, msg:"❌ Rechazado. CI: «INCOMPATIBLE … [currency at /fields/6]». Si se salta el CI: 409 del registry, el claim no queda Ready y un productor con la configuración de la plataforma no puede serializar (40403). Un cambio así va a un tópico .v2 con doble publicación."},
+  nodefault:{schema:null, ok:false, msg:"❌ Rechazado. Un lector nuevo no sabría qué valor dar a los mensajes históricos del tópico compactado (spike: «add promoCode WITHOUT default» → 409)."},
+};
+function showEvo(k){ const base = DATA.zt.fields; let target, marks={};
+  if (k==="nodefault"){ target = base.concat([{name:"promoCode",type:"string"}]); }
+  else target = EVO[k].schema.fields;
+  const tn = new Set(target.map(f=>f.name)), bn = new Set(base.map(f=>f.name));
+  target.forEach(f=>{ if(!bn.has(f.name)) marks[f.name]="added"; });
+  const rows = target.concat(base.filter(f=>!tn.has(f.name)).map(f=>{ marks[f.name]="removed"; return f; }));
+  document.getElementById("evoTable").innerHTML = fieldsTable(rows, marks);
+  document.getElementById("evoResult").innerHTML = `<div class="result ${EVO[k].ok?"ok":"bad"}">${EVO[k].msg}</div>`; }
+seg("evoSeg", d=>showEvo(d.e)); showEvo("compat");
+function showSpike(k){ const rows = DATA.spike.filter(r => k==="all" || (k==="avro" ? r.m==="avro" : r.m!=="avro"));
+  const cell = v => `<span class="pill ${v==="ACEPTA"?"ok":"bad"}">${v}</span>`;
+  document.getElementById("spikeTable").innerHTML = "<tr><th>Modelo</th><th>Cambio</th><th>Apicurio 3.3.4</th><th>Karapace 6.2.4</th></tr>" +
+    rows.map(r=>`<tr><td class="mono">${esc(r.m)}</td><td>${esc(r.c)}</td><td>${cell(r.a)}</td><td>${cell(r.k)}</td></tr>`).join(""); }
+seg("spikeSeg", d=>showSpike(d.k)); showSpike("all");
+
+/* ---------- ADR ---------- */
+document.getElementById("adrList").innerHTML = DATA.adrs.map((a,i)=>`<details ${i===0?"open":""}><summary>${esc(a.title)}</summary><div class="body"><pre style="white-space:pre-wrap;max-height:none">${esc(a.body)}</pre></div></details>`).join("");
+
+/* ---------- evidencia ---------- */
+const K = DATA.kpis;
+document.getElementById("evKpis").innerHTML = [
+  ["Propagación (con sondeo)", K.prop+" ms","escenario 02 · cota superior"],["Entrega p50 / p99", K.p50+" / "+K.p99+" ms",K.n+" cambios, objetivo < 5 000"],
+  ["Relectura completa", K.replay+" s","escenario 04"],["Claim Ready", K.lead+" s","escenario 11 · mediana "+K.leadmed+" s"],
+].map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="d muted">${k[2]}</div></div>`).join("");
+const BA = [["Tiempo hasta un stream gobernado","sin camino gobernado (manual, sin esquema)",100,K.lead+" s",4],["Llamadas síncronas por cambio","≥ 4",100,"0",0.5],["Retraso artificial por cambio","5 000 ms (sleep)",100,K.p99+" ms (p99)",K.p99/5000*100],["Esquemas registrados (dominio piloto)","0",1,"2 · FULL_TRANSITIVE",100]];
+document.getElementById("beforeAfter").innerHTML = BA.map(b=>`<div class="bar"><span><b>${b[0]}</b><br><span class="muted">antes: ${b[1]}</span></span><div class="track"><div class="fill alt" style="width:${b[2]}%"></div></div><span class="muted">antes</span></div><div class="bar"><span></span><div class="track"><div class="fill" style="width:${Math.max(b[4],1.5)}%"></div></div><span><b>${b[3]}</b></span></div>`).join("");
+const evTabs = document.getElementById("evTabs");
+evTabs.innerHTML = DATA.evidence.map((e,i)=>`<button class="btn" data-i="${i}" aria-pressed="${i===0}">${esc(e.name)}</button>`).join("");
+function showEv(i){ evTabs.querySelectorAll("button").forEach(b=>{ b.setAttribute("aria-pressed", b.dataset.i==i); b.classList.toggle("primary", b.dataset.i==i); });
+  document.getElementById("evOut").textContent = DATA.evidence[i].text; }
+evTabs.querySelectorAll("button").forEach(b=>b.onclick=()=>showEv(+b.dataset.i)); showEv(0);
+
+/* ---------- rúbrica ---------- */
+const RUB = DATA.rubric;
+let checked = {}; try { checked = JSON.parse(store.get("pg-rubric")||"{}"); } catch(e){}
+function renderRub(){
+  let total=0, done=0;
+  document.getElementById("rubList").innerHTML = RUB.map((c,ci)=>`<h2>${esc(c.crit)} <span class="pill ${c.mine?"acc":""}">${c.mine?"Daniel":"aporte"}</span></h2><div class="card">${c.items.map((it,ii)=>{ const id=ci+"-"+ii; total++; if(checked[id]) done++;
+      return `<label class="check"><input type="checkbox" data-id="${id}" ${checked[id]?"checked":""}><div><b>${esc(it[0])}</b><div class="muted">${esc(it[1])}</div></div></label>`; }).join("")}</div>`).join("");
+  document.getElementById("rubProgress").style.width = (done/total*100)+"%";
+  document.getElementById("rubProgressLabel").textContent = `${done} de ${total} evidencias revisadas`;
+  document.querySelectorAll("#rubList input").forEach(inp=>inp.onchange=()=>{ checked[inp.dataset.id]=inp.checked; store.set("pg-rubric",JSON.stringify(checked)); renderRub(); });
+}
+renderRub();
+</script>
+</body>
+</html>

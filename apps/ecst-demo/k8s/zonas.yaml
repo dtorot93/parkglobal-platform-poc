@@ -1,0 +1,62 @@
+# Dueño de topology.state.zone.v1 y consumidor de tarifas (vista local).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zonas
+  namespace: team-zonas
+  labels: { app: zonas, parkglobal.io/golden-path-demo: ecst }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # volumen RWO
+  selector:
+    matchLabels: { app: zonas }
+  template:
+    metadata:
+      labels: { app: zonas }
+    spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: app
+          image: parkglobal/ecst-demo:0.1.7
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP, value: zonas }
+          # Todo lo que el equipo configura del bus de eventos: referenciar el ConfigMap que creó la plataforma.
+          envFrom:
+            - prefix: ZONES_
+              configMapRef: { name: topology.state.zone.v1-client }
+            - prefix: TARIFFS_
+              configMapRef: { name: pricing.state.zone-tariff.v1-client }
+          ports:
+            - { name: http, containerPort: 8000 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: ["ALL"] } }
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: zonas-data }   # estado del PRODUCTOR: durable (en ParkGlobal, Aurora)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zonas
+  namespace: team-zonas
+spec:
+  selector: { app: zonas }
+  ports:
+    - { name: http, port: 8000, targetPort: http }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: zonas-data
+  namespace: team-zonas
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 100Mi }

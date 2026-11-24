@@ -1,0 +1,136 @@
+# 12 · Barrera 1 (CI) en local · 2026-11-23T23:03:46Z
+# make events-test: kyverno test + validate-streams + check_contracts contra Apicurio efímero + caso incompatible
+
+kyverno test platform/kyverno/tests
+Loading test  ( platform/kyverno/tests/kyverno-test.yaml ) ...
+  Loading values/variables ...
+  Loading policies ...
+  Warning: platform/kyverno/policies/require-registered-cost-center.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/
+  Warning: platform/kyverno/policies/namespace-matches-owner.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/
+  Warning: platform/kyverno/policies/restrict-size-by-environment.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/
+  Warning: platform/kyverno/policies/limit-claims-per-namespace.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/
+  Warning: platform/kyverno/policies/eventstream-domain-ownership.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/
+  Warning: platform/kyverno/policies/eventstream-no-pii-in-tvp.yaml: kyverno.io/v1 ClusterPolicy is deprecated and will be removed in a future release; migrate to ValidatingPolicy, MutatingPolicy, GeneratingPolicy or ImageValidatingPolicy (policies.kyverno.io), see https://kyverno.io/docs/guides/migration-to-cel/
+  Loading resources ...
+  Loading exceptions ...
+  Applying 6 policies to 10 resources with 0 exceptions ...
+  Checking results ...
+
+│──────────│────────────────────────────────│─────────────────────────────│───────────────────────────────────────────────────────────────────────────────────────────│────────│────────│
+│ [40;32mID (18) [0m │ [40;32mPOLICY                        [0m │ [40;32mRULE                       [0m │ [40;32mRESOURCE                                                                                 [0m │ [40;32mRESULT[0m │ [40;32mREASON[0m │
+│──────────│────────────────────────────────│─────────────────────────────│───────────────────────────────────────────────────────────────────────────────────────────│────────│────────│
+│ 1        │ require-registered-cost-center │ require-owner               │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │
+│ 2        │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │
+│ 3        │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │
+│ 4        │ restrict-size-by-environment   │ only-small-in-dev           │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │
+│ 5        │ limit-claims-per-namespace     │ max-3-claims                │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/valid-db                  │ Pass   │ Ok     │
+│ 6        │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/bad-cost-center-db        │ Pass   │ Ok     │
+│ 7        │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-payments-core/wrong-namespace-db       │ Pass   │ Ok     │
+│ 8        │ restrict-size-by-environment   │ only-small-in-dev           │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/medium-in-dev-db          │ Pass   │ Ok     │
+│ 9        │ require-registered-cost-center │ require-owner               │ platform.parkglobal.io/v1alpha1/DatabaseClaim/team-parking-core/no-owner-db               │ Pass   │ Ok     │
+│ 10       │ require-registered-cost-center │ require-owner               │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │
+│ 11       │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │
+│ 12       │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │
+│ 13       │ eventstream-domain-ownership   │ domain-belongs-to-owner     │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │
+│ 14       │ eventstream-no-pii-in-tvp      │ deny-pii                    │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/valid-stream                │ Pass   │ Ok     │
+│ 15       │ eventstream-domain-ownership   │ domain-belongs-to-owner     │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-zonas/stream-wrong-domain           │ Pass   │ Ok     │
+│ 16       │ eventstream-no-pii-in-tvp      │ deny-pii                    │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/stream-with-pii             │ Pass   │ Ok     │
+│ 17       │ namespace-matches-owner        │ namespace-is-team-namespace │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-parking-core/stream-wrong-namespace │ Pass   │ Ok     │
+│ 18       │ require-registered-cost-center │ cost-center-registered      │ platform.parkglobal.io/v1alpha1/EventStreamClaim/team-tarifas/stream-bad-cost-center      │ Pass   │ Ok     │
+│──────────│────────────────────────────────│─────────────────────────────│───────────────────────────────────────────────────────────────────────────────────────────│────────│────────│
+
+
+Test Summary: 18 tests passed and 0 tests failed
+
+./scripts/validate-streams.sh
+Evaluando 2 stream(s): streams/tarifas/zone-tariff-state/eventstreamclaim.yaml streams/zonas/zone-state/eventstreamclaim.yaml
+
+Applying 8 policy rule(s) to 2 resource(s)...
+
+policy add-finops-labels applied to team-tarifas/EventStreamClaim/zone-tariff-state:
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim
+metadata:
+    labels:
+        parkglobal.io/cost-center: CC-PRC-01
+        parkglobal.io/team: tarifas
+    name: zone-tariff-state
+    namespace: team-tarifas
+spec:
+    consumers:
+        - team: zonas
+        - team: consumidor-c
+    contract:
+        format: avro
+        version: 1
+    domain: pricing
+    entity: zone-tariff
+    environment: dev
+    governance:
+        description: Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).
+        pii: false
+        sloP99Seconds: 5
+    key:
+        format: <countryCode>:<zoneNo>
+        pattern: ^[A-Z]{2}:[0-9]+$
+    majorVersion: 1
+    owner:
+        costCenter: CC-PRC-01
+        team: tarifas
+    profile: small
+    type: state
+
+---
+
+
+Mutation:
+Mutation has been applied successfully.
+policy add-finops-labels applied to team-zonas/EventStreamClaim/zone-state:
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim
+metadata:
+    labels:
+        parkglobal.io/cost-center: CC-TOP-01
+        parkglobal.io/team: zonas
+    name: zone-state
+    namespace: team-zonas
+spec:
+    consumers:
+        - team: consumidor-c
+    contract:
+        format: avro
+        version: 1
+    domain: topology
+    entity: zone
+    environment: dev
+    governance:
+        description: Estado público de cada zona de parqueo, con referencia a su ciudad (cityId).
+        pii: false
+        sloP99Seconds: 5
+    key:
+        format: <countryCode>:<zoneNo>
+        pattern: ^[A-Z]{2}:[0-9]+$
+    majorVersion: 1
+    owner:
+        costCenter: CC-TOP-01
+        team: zonas
+    profile: small
+    type: state
+
+---
+
+
+Mutation:
+Mutation has been applied successfully.
+pass: 12, fail: 0, warn: 0, error: 0, skip: 0 
+./scripts/contracts/ci-registry.sh apicurio/apicurio-registry:3.3.4
+registry efímero listo (:18080)
+python3 scripts/contracts/check_contracts.py --registry http://localhost:18080/apis/ccompat/v7
+== streams/tarifas/zone-tariff-state
+  ok  v1 compatible (FULL_TRANSITIVE) -> id 1
+== streams/zonas/zone-state
+  ok  v1 compatible (FULL_TRANSITIVE) -> id 2
+
+OK: contratos válidos, inmutables y compatibles.
+--- un cambio incompatible DEBE fallar:
+OK: v2 sin currency rechazada por FULL_TRANSITIVE

@@ -1,4 +1,4 @@
-# Kyverno necesita leer DatabaseClaims (apiCall de conteo y reportes).
+# Kyverno necesita leer DatabaseClaims y EventStreamClaims (apiCall de conteo y reportes).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -9,5 +9,5 @@ metadata:
     rbac.kyverno.io/aggregate-to-reports-controller: "true"
 rules:
   - apiGroups: ["platform.parkglobal.io"]
-    resources: ["databaseclaims"]
+    resources: ["databaseclaims", "eventstreamclaims"]
     verbs: ["get", "list", "watch"]

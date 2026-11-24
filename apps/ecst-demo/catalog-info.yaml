@@ -1,0 +1,41 @@
+# Servicios de demostración del caso ECST. Las relaciones providesApis/consumesApis permiten el análisis de impacto:
+# antes de un cambio mayor en un contrato, el catálogo dice qué equipos consumen el stream.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tarifas-service
+  description: Fuente maestra de tarifas. Publica ZoneTariffState con outbox transaccional.
+  annotations: { backstage.io/kubernetes-namespace: team-tarifas }
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:team-tarifas
+  system: pricing
+  providesApis: [pricing-state-zone-tariff-v1]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: zonas-service
+  description: Dueño de ZoneState; mantiene una vista local de tarifas (cero llamadas a Tarifas o Core).
+  annotations: { backstage.io/kubernetes-namespace: team-zonas }
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:team-zonas
+  system: topology
+  providesApis: [topology-state-zone-v1]
+  consumesApis: [pricing-state-zone-tariff-v1]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: consumidor-c-service
+  description: Arma Ciudad -> Zonas -> Tarifa en local y decide tipo de carga y comisión.
+  annotations: { backstage.io/kubernetes-namespace: team-consumidor-c }
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:team-consumidor-c
+  system: pricing
+  consumesApis: [pricing-state-zone-tariff-v1, topology-state-zone-v1]

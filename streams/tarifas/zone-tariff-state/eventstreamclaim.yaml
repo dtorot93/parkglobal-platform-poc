@@ -1,0 +1,31 @@
+# Golden Path «Publicar stream de estado (ECST)». Generado por la plantilla de Backstage event-stream-claim.
+# La plataforma deriva: tópico pricing.state.zone-tariff.v1 (compactado), subject <tópico>-value (FULL_TRANSITIVE),
+# registro del contrato, configuración de cliente para el dueño y para cada consumidor, y ficha en el catálogo.
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim
+metadata:
+  name: zone-tariff-state
+  namespace: team-tarifas
+spec:
+  owner:
+    team: tarifas
+    costCenter: CC-PRC-01
+  domain: pricing
+  entity: zone-tariff
+  type: state
+  majorVersion: 1
+  key:
+    format: "<countryCode>:<zoneNo>"
+    pattern: "^[A-Z]{2}:[0-9]+$"
+  profile: small
+  environment: dev
+  contract:
+    format: avro
+    version: 1          # última versión presente en schemas/ (v1.avsc ... vN.avsc)
+  governance:
+    pii: false
+    sloP99Seconds: 5
+    description: Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).
+  consumers:
+    - team: zonas
+    - team: consumidor-c

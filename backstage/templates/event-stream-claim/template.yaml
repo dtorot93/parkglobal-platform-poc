@@ -1,0 +1,149 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: event-stream-claim-ecst
+  title: Publicar stream de estado (ECST)
+  description: >-
+    Golden Path de eventos: publica el estado de una entidad de tu dominio como stream ECST gobernado.
+    Genera el EventStreamClaim, el contrato Avro v1 y la ficha AsyncAPI; abre un PR que Kyverno y el Schema Registry
+    validan en CI (FULL_TRANSITIVE) y, si cumple, se integra sin revisión humana. La plataforma crea el tópico compactado,
+    registra el contrato y entrega la configuración de cliente a tu equipo y a tus consumidores.
+  tags: [golden-path, kafka, ecst, schema-registry, avro]
+spec:
+  owner: group:team-platform-events
+  type: event-stream
+  parameters:
+    - title: Stream
+      required: [entity, domain, team, costCenter, environment]
+      properties:
+        entity:
+          title: Entidad
+          type: string
+          description: Entidad cuyo estado publicas, en kebab-case (p. ej. zone-tariff). Un stream por entidad.
+          pattern: '^[a-z][a-z0-9-]{1,40}$'
+          ui:autofocus: true
+        domain:
+          title: Dominio
+          type: string
+          description: Dominio dueño del dato. Solo puedes publicar en los dominios de tu equipo (único escritor).
+          enum: [pricing, topology]
+          enumNames: ['pricing · Tarifas', 'topology · Zonas']
+        team:
+          title: Equipo dueño
+          type: string
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group]
+        costCenter:
+          title: Centro de costo
+          type: string
+          enum: [CC-PRC-01, CC-TOP-01, CC-CHG-01, CC-PARK-01, CC-PAY-01]
+        environment:
+          title: Entorno
+          type: string
+          default: dev
+          enum: [dev, staging]
+    - title: Clave, consumidores y gobierno
+      required: [keyFormat, keyPattern]
+      properties:
+        keyFormat:
+          title: Formato de la clave
+          type: string
+          default: '<countryCode>:<zoneNo>'
+          description: Identidad estable de la entidad. Define el orden y la compactación (una foto por clave).
+        keyPattern:
+          title: Expresión regular de la clave
+          type: string
+          default: '^[A-Z]{2}:[0-9]+$'
+        consumers:
+          title: Equipos consumidores
+          type: array
+          description: Reciben la configuración de cliente en su namespace y quedan registrados para el análisis de impacto.
+          ui:field: MultiEntityPicker
+          ui:options:
+            catalogFilter:
+              kind: [Group]
+        pii:
+          title: ¿Contiene datos personales?
+          type: boolean
+          default: false
+          description: La TVP no admite PII (Kyverno lo rechaza); es un caso atípico atendido por el Platform Team.
+        sloP99Seconds:
+          title: SLO de entrega p99 (segundos)
+          type: integer
+          default: 5
+        description:
+          title: Descripción
+          type: string
+    - title: Contrato (Avro)
+      required: [schema]
+      properties:
+        schema:
+          title: Contrato v1 (Avro, JSON)
+          type: string
+          description: >-
+            Foto COMPLETA del estado público (no un delta). Convención de plataforma: incluye version (long, monotónica por clave)
+            y updatedAt (timestamp-millis). Campos opcionales con default para poder evolucionar con FULL_TRANSITIVE.
+          ui:widget: textarea
+          ui:options:
+            rows: 18
+          default: |-
+            {
+              "type": "record",
+              "name": "EntityState",
+              "namespace": "io.parkglobal.domain.state",
+              "doc": "Foto completa del estado público de la entidad.",
+              "fields": [
+                { "name": "key", "type": "string", "doc": "Igual a la clave del mensaje." },
+                { "name": "version", "type": "long", "doc": "Versión monotónica por clave." },
+                { "name": "updatedAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+              ]
+            }
+  steps:
+    - id: fetch
+      name: Generar EventStreamClaim, contrato v1 y ficha AsyncAPI
+      action: fetch:template
+      input:
+        url: ./skeleton
+        targetPath: ./streams/${{ parameters.team | parseEntityRef | pick('name') | replace('team-', '') }}/${{ parameters.entity }}-state
+        values:
+          name: ${{ parameters.entity }}-state
+          entity: ${{ parameters.entity }}
+          domain: ${{ parameters.domain }}
+          topic: ${{ parameters.domain }}.state.${{ parameters.entity }}.v1
+          team: ${{ parameters.team | parseEntityRef | pick('name') | replace('team-', '') }}
+          costCenter: ${{ parameters.costCenter }}
+          environment: ${{ parameters.environment }}
+          keyFormat: ${{ parameters.keyFormat }}
+          keyPattern: ${{ parameters.keyPattern }}
+          consumers: ${{ parameters.consumers or [] }}
+          pii: ${{ parameters.pii }}
+          sloP99Seconds: ${{ parameters.sloP99Seconds }}
+          description: ${{ parameters.description or ('Estado público de ' + parameters.entity) }}
+          schema: ${{ parameters.schema }}
+    - id: publish
+      name: Abrir PR en el repositorio GitOps
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=dtorot93&repo=parkglobal-platform-poc
+        branchName: stream/${{ parameters.entity }}-state
+        title: '[golden-path] EventStreamClaim ${{ parameters.domain }}.state.${{ parameters.entity }}.v1'
+        description: |
+          Solicitud de stream de estado (ECST) por Golden Path (Backstage).
+
+          | Campo | Valor |
+          |---|---|
+          | Equipo dueño | ${{ parameters.team }} |
+          | Tópico | `${{ parameters.domain }}.state.${{ parameters.entity }}.v1` (compactado) |
+          | Subject | `${{ parameters.domain }}.state.${{ parameters.entity }}.v1-value` (FULL_TRANSITIVE) |
+          | Clave | `${{ parameters.keyFormat }}` |
+          | Entorno | ${{ parameters.environment }} |
+
+          El CI valida políticas (Kyverno) y el contrato contra un Schema Registry efímero; si cumple, el PR se integra solo.
+  output:
+    links:
+      - title: Pull request
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Stream en el catálogo (disponible tras el merge)
+        url: /catalog/default/api/${{ parameters.domain }}-state-${{ parameters.entity }}-v1

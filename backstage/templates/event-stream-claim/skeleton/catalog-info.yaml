@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: ${{ values.topic | replace('.', '-') }}
+  title: ${{ values.topic }}
+  description: ${{ values.description }}
+  annotations:
+    parkglobal.io/topic: ${{ values.topic }}
+    parkglobal.io/schema-subject: ${{ values.topic }}-value
+    parkglobal.io/compatibility: FULL_TRANSITIVE
+    parkglobal.io/contract-version: "1"
+    parkglobal.io/pii: "${{ values.pii }}"
+    parkglobal.io/slo-p99-seconds: "${{ values.sloP99Seconds }}"
+    parkglobal.io/cost-center: ${{ values.costCenter }}
+    backstage.io/kubernetes-namespace: team-${{ values.team }}
+  tags: [ecst, kafka, avro, ${{ values.domain }}, golden-path]
+spec:
+  type: asyncapi
+  lifecycle: experimental
+  owner: group:team-${{ values.team }}
+  system: ${{ values.domain }}
+  definition:
+    $text: ./asyncapi.yaml

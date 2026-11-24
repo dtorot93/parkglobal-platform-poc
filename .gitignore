@@ -9,3 +9,5 @@ backstage/**/app-config.local.yaml
 .DS_Store
 .corepack/
 .playwright-mcp/
+__pycache__/
+*.pyc

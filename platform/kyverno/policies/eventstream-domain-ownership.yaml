@@ -1,0 +1,34 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: eventstream-domain-ownership
+  annotations:
+    policies.kyverno.io/title: Único escritor por dominio de eventos
+    policies.kyverno.io/category: Gobierno de datos
+    policies.kyverno.io/description: >-
+      Un equipo solo puede publicar streams de estado en los dominios que le pertenecen (kyverno/event-domains).
+      Evita que dos equipos escriban el mismo estado (el antipatrón del agregado Ciudad con varios dueños).
+spec:
+  background: false
+  rules:
+    - name: domain-belongs-to-owner
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/EventStreamClaim]
+      context:
+        - name: eventdomains
+          configMap:
+            name: event-domains
+            namespace: kyverno
+      validate:
+        failureAction: Enforce
+        message: >-
+          El dominio {{ request.object.spec.domain }} no pertenece al equipo {{ request.object.spec.owner.team }}.
+          Cada dominio tiene un único escritor: publique en su propio dominio o consuma el stream del dueño.
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.domain }}:{{ request.object.spec.owner.team }}"
+                operator: AnyNotIn
+                value: "{{ split(eventdomains.data.owners, ',') }}"

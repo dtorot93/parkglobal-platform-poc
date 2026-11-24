@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - eventstreamclaim.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    parkglobal.io/contract-of: zone-state
+configMapGenerator:
+  - name: zone-state-contract
+    files:
+      - v1.avsc=schemas/v1.avsc

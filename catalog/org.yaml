@@ -46,3 +46,64 @@ metadata:
   description: Sistema de parqueo digital (Parking BU).
 spec:
   owner: group:team-parking-core
+---
+# --- Proyecto 2 · Golden Path de eventos (caso Tarifas -> Zonas -> Consumidor C) ---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-tarifas
+  title: Tarifas
+  description: Squad stream-aligned dueño del dominio pricing (fuente maestra de tarifas).
+spec:
+  type: team
+  profile: { displayName: Tarifas }
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-zonas
+  title: Zonas
+  description: Squad stream-aligned dueño del dominio topology (zonas y su ciudad).
+spec:
+  type: team
+  profile: { displayName: Zonas }
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-consumidor-c
+  title: Consumidor C
+  description: Squad que decide tipo de carga y comisión a partir de tarifas y zonas.
+spec:
+  type: team
+  profile: { displayName: Consumidor C }
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: team-platform-events
+  title: Platform · Eventos
+  description: Platform Team, capacidad de gestión de eventos (Kafka, Schema Registry, Golden Path ECST).
+spec:
+  type: team
+  profile: { displayName: Platform · Eventos }
+  children: []
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: pricing
+  description: Dominio de tarifas (Parking BU).
+spec:
+  owner: group:team-tarifas
+---
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: topology
+  description: Dominio de zonas y ciudades (Parking BU).
+spec:
+  owner: group:team-zonas

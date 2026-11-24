@@ -1,0 +1,83 @@
+# Golden Path «Publicar stream de estado (ECST)» · primera barrera (shift-left).
+# 1) Kyverno: las mismas políticas de admisión (dueño, centro de costo, dominio propio, sin PII).
+# 2) Contratos: estructura, inmutabilidad de versiones publicadas, catálogo sincronizado y compatibilidad
+#    FULL_TRANSITIVE contra un Schema Registry EFÍMERO (contenedor de servicio con la misma imagen que producción).
+# Si todo pasa y la rama es stream/*, el PR se integra sin revisión humana (ADR-003). La segunda barrera es el
+# registry del clúster: un cambio incompatible que salte el CI recibe 409 y el claim no queda Ready.
+name: validate-and-merge-streams
+
+on:
+  pull_request:
+    paths:
+      - "streams/**"
+
+permissions:
+  contents: read
+
+env:
+  KYVERNO_VERSION: v1.19.1
+  KUBECONFORM_VERSION: v0.8.0
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    services:
+      registry:
+        image: apicurio/apicurio-registry:3.3.4
+        ports:
+          - 8080:8080
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: El PR solo toca streams/ (el auto-merge no puede colar cambios de plataforma)
+        if: startsWith(github.head_ref, 'stream/')
+        run: |
+          outside=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -v '^streams/' || true)
+          if [ -n "$outside" ]; then
+            echo "::error::Un PR stream/* solo puede modificar streams/. Archivos fuera de alcance:"; echo "$outside"; exit 1
+          fi
+
+      - name: Instalar CLIs (versiones fijas)
+        run: |
+          curl -sSL "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz" | tar -xz -C /usr/local/bin kyverno
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar -xz -C /usr/local/bin kubeconform
+          python3 -c "import yaml" 2>/dev/null || sudo apt-get install -y -qq python3-yaml
+          kyverno version && kubeconform -v
+
+      - name: YAML bien formado
+        run: kubeconform -summary -strict -ignore-missing-schemas -ignore-filename-pattern 'asyncapi.yaml' -ignore-filename-pattern 'kustomization.yaml' streams/
+
+      - name: Pruebas unitarias de las políticas
+        run: kyverno test platform/kyverno/tests
+
+      - name: Políticas Kyverno sobre los streams (falla cerrado)
+        run: ./scripts/validate-streams.sh
+
+      - name: Esperar al Schema Registry efímero
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/apis/ccompat/v7/subjects >/dev/null && echo "registry listo" && exit 0
+            sleep 2
+          done
+          echo "::error::El registry efímero no respondió"; exit 1
+
+      - name: Contratos (estructura, inmutabilidad, catálogo y compatibilidad FULL_TRANSITIVE)
+        run: |
+          python3 scripts/contracts/check_contracts.py \
+            --registry http://localhost:8080/apis/ccompat/v7 \
+            --base-ref "origin/${{ github.base_ref }}"
+
+  auto-merge:
+    needs: validate
+    if: startsWith(github.head_ref, 'stream/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Merge por política (sin revisión humana)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge ${{ github.event.pull_request.number }} --repo "${{ github.repository }}" --squash --delete-branch

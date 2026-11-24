@@ -1,0 +1,117 @@
+# 06 · Jerarquía Ciudad -> Zonas -> Tarifa (opción A+) · 2026-11-23T23:04:28Z
+# Dos streams de estado con un solo dueño cada uno; el Consumidor C los une por zoneKey y agrupa por cityId
+
+{
+  "cities": [
+    {
+      "cityId": "CO-BOG",
+      "cityName": "Bogotá",
+      "zones": [
+        {
+          "zoneKey": "CO:1101",
+          "name": "Chapinero",
+          "status": "ACTIVE",
+          "zoneVersion": 1,
+          "tariff": {
+            "version": 47,
+            "currency": "COP",
+            "parkingFree": false,
+            "maxDailyPriceMinor": 10198,
+            "status": "ACTIVE"
+          },
+          "decision": {
+            "chargeType": "APARCAMIENTO_MAS_CARGA",
+            "commissionTier": "ESTANDAR"
+          }
+        },
+        {
+          "zoneKey": "CO:1102",
+          "name": "Usaquén",
+          "status": "ACTIVE",
+          "zoneVersion": 1,
+          "tariff": {
+            "version": 51,
+            "currency": "COP",
+            "parkingFree": false,
+            "maxDailyPriceMinor": 1800000,
+            "status": "ACTIVE"
+          },
+          "decision": {
+            "chargeType": "APARCAMIENTO_MAS_CARGA",
+            "commissionTier": "ESTANDAR"
+          }
+        }
+      ]
+    },
+    {
+      "cityId": "SE-STO",
+      "cityName": "Stockholm",
+      "zones": [
+        {
+          "zoneKey": "SE:4021",
+          "name": "Södermalm Norte",
+          "status": "ACTIVE",
+          "zoneVersion": 1,
+          "tariff": {
+            "version": 88,
+            "currency": "SEK",
+            "parkingFree": false,
+            "maxDailyPriceMinor": 10195,
+            "status": "ACTIVE"
+          },
+          "decision": {
+            "chargeType": "APARCAMIENTO_MAS_CARGA",
+            "commissionTier": "ALTA"
+          }
+        },
+        {
+          "zoneKey": "SE:4022",
+          "name": "Södermalm Sur",
+          "status": "ACTIVE",
+          "zoneVersion": 1,
+          "tariff": {
+            "version": 51,
+            "currency": "SEK",
+            "parkingFree": true,
+            "maxDailyPriceMinor": 10196,
+            "status": "ACTIVE"
+          },
+          "decision": {
+            "chargeType": "SOLO_CARGA",
+            "commissionTier": "ALTA"
+          }
+        }
+      ]
+    },
+    {
+      "cityId": "SE-GOT",
+      "cityName": "Göteborg",
+      "zones": [
+        {
+          "zoneKey": "SE:5101",
+          "name": "Centrum (Göteborg) 180427",
+          "status": "ACTIVE",
+          "zoneVersion": 6,
+          "tariff": {
+            "version": 47,
+            "currency": "SEK",
+            "parkingFree": false,
+            "maxDailyPriceMinor": 10197,
+            "status": "ACTIVE"
+          },
+          "decision": {
+            "chargeType": "APARCAMIENTO_MAS_CARGA",
+            "commissionTier": "ALTA"
+          }
+        }
+      ]
+    }
+  ],
+  "tariffsWaitingForZone": []
+}
+
+## Comprobaciones
+  ✔ 3 ciudades y 5 zonas
+  ✔ Las 5 zonas tienen tarifa
+  ✔ El cambio de Zonas (nombre) llegó sin tocar Tarifas
+  ✔ Ninguna tarifa espera a su zona

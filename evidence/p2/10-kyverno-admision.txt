@@ -1,0 +1,36 @@
+# 10 · Kyverno en la admisión · 2026-11-23T23:05:22Z
+# kubectl apply --dry-run=server de claims inválidos y de uno válido
+
+## tests/fixtures/invalid-stream-cost-center.yaml
+  Error from server: error when creating "tests/fixtures/invalid-stream-cost-center.yaml": admission webhook "validate.kyverno.svc-fail" denied the request: 
+  resource EventStreamClaim/team-tarifas/stream-bad-cost-center was blocked due to the following policies 
+  require-registered-cost-center:
+    cost-center-registered: El centro de costo CC-XXX-99 no está registrado (FinOps).
+
+## tests/fixtures/invalid-stream-domain.yaml
+  Error from server: error when creating "tests/fixtures/invalid-stream-domain.yaml": admission webhook "validate.kyverno.svc-fail" denied the request: 
+  resource EventStreamClaim/team-zonas/stream-wrong-domain was blocked due to the following policies 
+  eventstream-domain-ownership:
+    domain-belongs-to-owner: 'El dominio pricing no pertenece al equipo zonas. Cada dominio tiene un único escritor: publique en su propio dominio o consuma el stream del dueño.'
+
+## tests/fixtures/invalid-stream-namespace.yaml
+  Error from server: error when creating "tests/fixtures/invalid-stream-namespace.yaml": admission webhook "validate.kyverno.svc-fail" denied the request: 
+  resource EventStreamClaim/team-parking-core/stream-wrong-namespace was blocked due to the following policies 
+  namespace-matches-owner:
+    namespace-is-team-namespace: El EventStreamClaim debe crearse en el namespace team-tarifas, no en team-parking-core.
+
+## tests/fixtures/invalid-stream-pii.yaml
+  Error from server: error when creating "tests/fixtures/invalid-stream-pii.yaml": admission webhook "validate.kyverno.svc-fail" denied the request: 
+  resource EventStreamClaim/team-tarifas/stream-with-pii was blocked due to the following policies 
+  eventstream-no-pii-in-tvp:
+    deny-pii: 'El stream stream-with-pii declara datos personales (governance.pii=true). La TVP no los admite: publique solo identificadores no personales o abra un caso atípico con el Platform Team (fase 2: tokenización).'
+
+## tests/fixtures/valid-stream.yaml
+  eventstreamclaim.platform.parkglobal.io/valid-stream created (server dry run)
+
+## Comprobaciones
+  ✔ Rechazado por la regla cost-center-registered
+  ✔ Rechazado por la regla domain-belongs-to-owner
+  ✔ Rechazado por la regla namespace-is-team-namespace
+  ✔ Rechazado por la regla deny-pii
+  ✔ Un claim válido se admite

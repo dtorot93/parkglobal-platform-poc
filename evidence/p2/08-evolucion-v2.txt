@@ -1,0 +1,22 @@
+# 08 · Evolución compatible v1 -> v2 (FULL_TRANSITIVE) · 2026-11-23T23:05:09Z
+# Stream desechable pricing.state.evo-180429.v1: claim v1, luego contract.version: 2 (maxSessionMinutes opcional con default)
+
+Claim con contrato v2 registrado en: 3849 ms
+NAME               TOPIC                         CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE
+evo-180429-state   pricing.state.evo-180429.v1   v2         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   40s
+NAME                                  STATUS     COMPLETIONS   DURATION   AGE
+evo-180429-state-contract-v2-98d67e   Complete   1/1           3s         8s
+
+Versiones del subject: [1,2]
+
+## Un productor escribe con v2; dos lectores leen el mismo mensaje
+schema id del mensaje: 3
+lector con el contrato v1 -> {'zoneKey': 'SE:4021', 'countryCode': 'SE', 'zoneNo': 4021, 'version': 1, 'status': 'ACTIVE', 'timezone': 'UTC', 'currency': 'SEK', 'validFrom': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc), 'validTo': None, 'parkingTypesByChannel': {}, 'parkingFree': False, 'maxDailyPriceMinor': 15000, 'updatedAt': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc)}
+lector con el contrato v2 -> {'zoneKey': 'SE:4021', 'countryCode': 'SE', 'zoneNo': 4021, 'version': 1, 'status': 'ACTIVE', 'timezone': 'UTC', 'currency': 'SEK', 'validFrom': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc), 'validTo': None, 'parkingTypesByChannel': {}, 'parkingFree': False, 'maxDailyPriceMinor': 15000, 'updatedAt': datetime.datetime(1970, 1, 1, 0, 0, 0, 1000, tzinfo=datetime.timezone.utc), 'maxSessionMinutes': 240}
+
+## Comprobaciones
+  ✔ El registry aceptó la v2 ([1,2])
+  ✔ El claim reporta contractVersion=v2 y contractRegistered=true
+  ✔ El productor publicó con v2 sin autorregistro
+  ✔ El lector v1 lee el mensaje v2 sin el campo nuevo
+  ✔ El lector v2 ve maxSessionMinutes=240

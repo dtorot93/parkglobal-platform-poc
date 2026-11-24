@@ -1,0 +1,29 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: eventstream-no-pii-in-tvp
+  annotations:
+    policies.kyverno.io/title: Sin datos personales en streams de la TVP
+    policies.kyverno.io/category: Seguridad
+    policies.kyverno.io/description: >-
+      La TVP no ofrece cifrado ni tokenización por campo: un stream con PII queda fuera del autoservicio (regla 80/20)
+      y se atiende como caso atípico con el Platform Team hasta la fase 2.
+spec:
+  background: false
+  rules:
+    - name: deny-pii
+      match:
+        any:
+          - resources:
+              kinds: [platform.parkglobal.io/v1alpha1/EventStreamClaim]
+      validate:
+        failureAction: Enforce
+        message: >-
+          El stream {{ request.object.metadata.name }} declara datos personales (governance.pii=true). La TVP no los admite:
+          publique solo identificadores no personales o abra un caso atípico con el Platform Team (fase 2: tokenización).
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.governance.pii || `false` }}"
+                operator: Equals
+                value: true

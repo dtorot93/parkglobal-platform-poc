@@ -1,0 +1,14 @@
+# Argo CD aplica el claim y convierte cada versión del contrato en una clave del ConfigMap <claim>-contract.
+# Para publicar una versión nueva: agregue schemas/vN.avsc, súmela a files y suba spec.contract.version (el CI lo verifica).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - eventstreamclaim.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    parkglobal.io/contract-of: zone-tariff-state
+configMapGenerator:
+  - name: zone-tariff-state-contract
+    files:
+      - v1.avsc=schemas/v1.avsc

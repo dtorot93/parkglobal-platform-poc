@@ -51,3 +51,18 @@ Registradas el 2026-10-05 en la Mac de referencia (`uname -m` = arm64). Nada usa
 | actions/checkout | v7.0.1 |
 | kyverno CLI | v1.19.1 |
 | kubeconform | v0.8.0 |
+
+## Proyecto 2 · Golden Path de eventos (registradas el 2026-11-21, WSL2 Ubuntu x86_64, Docker Desktop 27.5.1, cgroup v1)
+
+| Componente | Origen | Versión |
+|---|---|---|
+| Strimzi (operador) | chart strimzi/strimzi-kafka-operator | 1.3.0 (CRDs `kafka.strimzi.io/v1`) |
+| Apache Kafka | Strimzi | 4.3.1, KRaft (`metadataVersion` 4.3-IV0), 1 nodo dual-role |
+| Apicurio Registry | apicurio/apicurio-registry | 3.3.4 (clúster, CI efímero y spike) |
+| Apicurio Registry UI | apicurio/apicurio-registry-ui | 3.3.4 |
+| Karapace (solo en el spike, ADR-005) | ghcr.io/aiven-open/karapace | 6.2.4 |
+| provider-kubernetes | xpkg.crossplane.io/crossplane-contrib | v1.4.1 |
+| Job registrador de contratos | python | 3.13.17-alpine |
+| Servicios de demo | python 3.13.17-slim + confluent-kafka[avro,schemaregistry] | 2.16.1 (fastavro 1.13.1) |
+| kind (WSL2) | binario oficial | v0.31.0 |
+| kyverno CLI (WSL2) | binario oficial | 1.19.1 |

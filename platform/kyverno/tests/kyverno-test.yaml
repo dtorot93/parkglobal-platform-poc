@@ -1,18 +1,25 @@
 apiVersion: cli.kyverno.io/v1alpha1
 kind: Test
 metadata:
-  name: databaseclaim-governance
+  name: platform-api-governance
 policies:
   - ../policies/require-registered-cost-center.yaml
   - ../policies/namespace-matches-owner.yaml
   - ../policies/restrict-size-by-environment.yaml
   - ../policies/limit-claims-per-namespace.yaml
+  - ../policies/eventstream-domain-ownership.yaml
+  - ../policies/eventstream-no-pii-in-tvp.yaml
 resources:
   - ../../../tests/fixtures/valid-claim.yaml
   - ../../../tests/fixtures/invalid-cost-center.yaml
   - ../../../tests/fixtures/invalid-namespace.yaml
   - ../../../tests/fixtures/invalid-medium-in-dev.yaml
   - ../../../tests/fixtures/invalid-no-owner.yaml
+  - ../../../tests/fixtures/valid-stream.yaml
+  - ../../../tests/fixtures/invalid-stream-domain.yaml
+  - ../../../tests/fixtures/invalid-stream-pii.yaml
+  - ../../../tests/fixtures/invalid-stream-namespace.yaml
+  - ../../../tests/fixtures/invalid-stream-cost-center.yaml
 variables: values.yaml
 results:
   # Claim válido: pasa todas las reglas
@@ -26,3 +33,14 @@ results:
   - { policy: namespace-matches-owner, rule: namespace-is-team-namespace, kind: DatabaseClaim, resources: [wrong-namespace-db], result: fail }
   - { policy: restrict-size-by-environment, rule: only-small-in-dev, kind: DatabaseClaim, resources: [medium-in-dev-db], result: fail }
   - { policy: require-registered-cost-center, rule: require-owner, kind: DatabaseClaim, resources: [no-owner-db], result: fail }
+  # EventStreamClaim válido: pasa las reglas compartidas con DatabaseClaim y las propias de eventos
+  - { policy: require-registered-cost-center, rule: require-owner, kind: EventStreamClaim, resources: [valid-stream], result: pass }
+  - { policy: require-registered-cost-center, rule: cost-center-registered, kind: EventStreamClaim, resources: [valid-stream], result: pass }
+  - { policy: namespace-matches-owner, rule: namespace-is-team-namespace, kind: EventStreamClaim, resources: [valid-stream], result: pass }
+  - { policy: eventstream-domain-ownership, rule: domain-belongs-to-owner, kind: EventStreamClaim, resources: [valid-stream], result: pass }
+  - { policy: eventstream-no-pii-in-tvp, rule: deny-pii, kind: EventStreamClaim, resources: [valid-stream], result: pass }
+  # EventStreamClaim inválidos
+  - { policy: eventstream-domain-ownership, rule: domain-belongs-to-owner, kind: EventStreamClaim, resources: [stream-wrong-domain], result: fail }
+  - { policy: eventstream-no-pii-in-tvp, rule: deny-pii, kind: EventStreamClaim, resources: [stream-with-pii], result: fail }
+  - { policy: namespace-matches-owner, rule: namespace-is-team-namespace, kind: EventStreamClaim, resources: [stream-wrong-namespace], result: fail }
+  - { policy: require-registered-cost-center, rule: cost-center-registered, kind: EventStreamClaim, resources: [stream-bad-cost-center], result: fail }

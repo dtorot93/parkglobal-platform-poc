@@ -196,6 +196,11 @@ catalog:
     # Golden Path: Solicitar base de datos PostgreSQL
     - type: file
       target: ../../templates/database-claim/template.yaml
+    # Golden Path: Publicar stream de estado (ECST) · Proyecto 2
+    - type: file
+      target: ../../../apps/ecst-demo/catalog-info.yaml
+    - type: file
+      target: ../../templates/event-stream-claim/template.yaml
   providers:
     github:
       # Entidades Resource generadas por los PRs del Golden Path, una vez integradas en main.
@@ -209,3 +214,14 @@ catalog:
           frequency: { minutes: 1 }
           timeout: { minutes: 1 }
           initialDelay: { seconds: 15 }
+      # Catálogo de streams (Proyecto 2): entidades API AsyncAPI generadas por el Golden Path de eventos.
+      parkglobalStreams:
+        organization: 'dtorot93'
+        catalogPath: '/streams/**/catalog-info.yaml'
+        filters:
+          branch: 'main'
+          repository: '^parkglobal-platform-poc$'
+        schedule:
+          frequency: { minutes: 1 }
+          timeout: { minutes: 1 }
+          initialDelay: { seconds: 20 }

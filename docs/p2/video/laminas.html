@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ParkGlobal · Golden Path de eventos</title>
+<style>
+:root{--bg:#0c0c0c;--fg:#f2f2f2;--mut:#9aa0a6;--line:#333;--cyan:#61d6d6;--green:#5fd068;--red:#f0717b}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif}
+body{--u:min(1vw,1.7778vh);cursor:none}
+section{display:none;height:100%;padding:calc(4*var(--u)) calc(6*var(--u));flex-direction:column;justify-content:center;gap:calc(2.4*var(--u));font-size:calc(1.9*var(--u));line-height:1.35}
+section.on{display:flex}
+h1,h2,p{margin:0}
+h1{font-size:calc(5*var(--u));line-height:1.1}
+h2{font-size:calc(3.5*var(--u));line-height:1.15}
+.m{color:var(--mut)} .c{color:var(--cyan)} .g{color:var(--green)} .r{color:var(--red)}
+table{border-collapse:collapse;width:100%}
+td,th{text-align:left;padding:.48em .5em;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:400}
+.big td:first-child{font-size:1.8em;font-weight:700;color:var(--red);white-space:nowrap;width:20%}
+.flow{display:flex;align-items:stretch;gap:.5em}
+.box{flex:1;border:2px solid var(--cyan);padding:.6em;font-size:.85em}
+.box b{display:block;font-size:1.15em}
+.todo{border-style:dashed;border-color:var(--mut)}
+.arr{align-self:center;color:var(--mut)}
+</style></head><body>
+
+<section>
+  <p class="c">ARTI-4219 Arquitectura de Plataformas · Proyecto 2</p>
+  <h1>Golden Path de eventos<br>para ParkGlobal</h1>
+  <table>
+    <tr><td class="m">Parte 1</td><td>Pedir una base de datos en autoservicio</td><td><code>DatabaseClaim</code></td></tr>
+    <tr><td class="c">Parte 2</td><td><b>Publicar eventos de estado gobernados en autoservicio</b></td><td class="c"><code>EventStreamClaim</code></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>El problema: Kafka sin contratos</h2>
+  <table class="big">
+    <tr><td>0</td><td>esquemas registrados: cada consumidor adivina el formato</td></tr>
+    <tr><td>1 de 20</td><td>tópicos de Zonas compactado: no se puede reconstruir el estado</td></tr>
+    <tr><td>2 de 42</td><td>servicios declaran sus eventos: no se sabe quién consume qué</td></tr>
+    <tr><td>4 o más</td><td>llamadas síncronas por cada cambio de tarifa, tras una espera fija de 5 s</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Cómo se hizo: se extendió la plataforma de la parte 1</h2>
+  <div class="flow">
+    <div class="box todo"><b>Backstage</b>formulario</div><div class="arr">→</div>
+    <div class="box todo"><b>GitHub + Argo CD</b>PR, CI y GitOps</div><div class="arr">→</div>
+    <div class="box"><b>Kyverno</b>dueño, dominio, PII, costo</div><div class="arr">→</div>
+    <div class="box"><b>Crossplane</b>EventStreamClaim</div>
+  </div>
+  <p class="m">La plataforma crea por el equipo:</p>
+  <div class="flow">
+    <div class="box"><b>Strimzi · Kafka</b>tópico compactado</div>
+    <div class="box"><b>Apicurio Registry</b>contrato Avro, FULL_TRANSITIVE</div>
+    <div class="box"><b>ConfigMap</b>configuración para dueño y consumidores</div>
+  </div>
+  <p class="m" style="font-size:.8em">Borde continuo: se demuestra en vivo. Borde punteado: implementado como código, fuera de esta demo local.<br>
+  La base de datos del registry se pidió con el DatabaseClaim de la parte 1.</p>
+</section>
+
+<section>
+  <h2>Qué mejoró</h2>
+  <table>
+    <tr><th></th><th>Antes (diagnóstico)</th><th>Ahora (PoC)</th></tr>
+    <tr><td>Crear un stream</td><td class="r">Cada servicio, a mano</td><td class="g">Un claim, listo en menos de 1 min</td></tr>
+    <tr><td>Contrato</td><td class="r">JSON sin versión</td><td class="g">Avro versionado y registrado</td></tr>
+    <tr><td>Cambio que rompe</td><td class="r">Sin política que lo detenga</td><td class="g">Falla en el chequeo y en el registry</td></tr>
+    <tr><td>Llamadas por cambio</td><td class="r">4 o más</td><td class="g">0</td></tr>
+    <tr><td>Espera artificial</td><td class="r">5 s fijos</td><td class="g">Ninguna</td></tr>
+    <tr><td>Productor caído</td><td class="r">Se pierde el recálculo</td><td class="g">La copia local sigue respondiendo</td></tr>
+    <tr><td>Reglas</td><td class="r">Sin guía escrita</td><td class="g">Políticas como código</td></tr>
+  </table>
+</section>
+
+<section>
+  <h1>El equipo declara qué publica.<br><span class="c">La plataforma resuelve el cómo.</span></h1>
+  <table>
+    <tr><td class="m">El desarrollador aporta</td><td>7 campos obligatorios y su contrato</td></tr>
+    <tr><td class="m">Ya no decide</td><td>particiones, compactación, subject, compatibilidad ni serializadores</td></tr>
+    <tr><td class="m">Siguiente paso</td><td>flujo GitOps de punta a punta, autenticación y ACL en el bus</td></tr>
+  </table>
+</section>
+
+<script>
+const s=[...document.querySelectorAll('section')];let i=0;
+function show(n){i=Math.max(0,Math.min(s.length-1,n));s.forEach((e,j)=>e.classList.toggle('on',j===i));history.replaceState(null,'','#'+(i+1))}
+addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown','Enter'].includes(e.key))show(i+1);if(['ArrowLeft','PageUp'].includes(e.key))show(i-1);if(e.key==='Home')show(0)});
+addEventListener('click',()=>show(i+1));
+addEventListener('hashchange',()=>show((+location.hash.slice(1)||1)-1));
+show((+location.hash.slice(1)||1)-1);
+</script>
+</body></html>

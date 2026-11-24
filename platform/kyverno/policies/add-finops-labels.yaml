@@ -14,7 +14,7 @@ spec:
       match:
         any:
           - resources:
-              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim]
+              kinds: [platform.parkglobal.io/v1alpha1/DatabaseClaim, platform.parkglobal.io/v1alpha1/EventStreamClaim]
       preconditions:
         all:
           - key: "{{ request.object.spec.owner.team || '' }}"

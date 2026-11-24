@@ -1,0 +1,98 @@
+# Apicurio Registry 3 (Apache-2.0): Schema Registry de la plataforma (ADR-006).
+# API compatible con Confluent en /apis/ccompat/v7 (los serializadores estándar funcionan sin cambios)
+# y API nativa v3 en /apis/registry/v3 (metadatos de catálogo: dueño, PII, SLO, consumidores).
+# Almacenamiento: PostgreSQL del DatabaseClaim schema-registry-db (secreto por referencia).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-registry
+  namespace: team-platform-events
+  labels: { app: schema-registry, parkglobal.io/team: platform-events, parkglobal.io/cost-center: CC-PLAT-01 }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: schema-registry }
+  template:
+    metadata:
+      labels: { app: schema-registry, parkglobal.io/team: platform-events }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: registry
+          image: apicurio/apicurio-registry:3.3.4
+          ports:
+            - { name: http, containerPort: 8080 }
+            - { name: management, containerPort: 9000 }   # salud de Quarkus (/health/ready, /health/live)
+          env:
+            - { name: APICURIO_STORAGE_KIND, value: sql }
+            - { name: APICURIO_STORAGE_SQL_KIND, value: postgresql }
+            - { name: APICURIO_DATASOURCE_URL, value: "jdbc:postgresql://schema-registry-db-rw.team-platform-events.svc:5432/app" }
+            - name: APICURIO_DATASOURCE_USERNAME
+              valueFrom: { secretKeyRef: { name: schema-registry-db-app, key: username } }
+            - name: APICURIO_DATASOURCE_PASSWORD
+              valueFrom: { secretKeyRef: { name: schema-registry-db-app, key: password } }
+            # Gobierno global: toda nueva versión debe ser sintácticamente válida, aunque el subject no tenga regla propia.
+            - { name: APICURIO_RULES_GLOBAL_VALIDITY, value: FULL }
+            - { name: QUARKUS_HTTP_CORS_ORIGINS, value: "http://localhost:8888" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /health/ready, port: management }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health/live, port: management }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 384Mi }
+            limits: { memory: 768Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: schema-registry
+  namespace: team-platform-events
+spec:
+  selector: { app: schema-registry }
+  ports:
+    - { name: http, port: 8080, targetPort: http }
+---
+# Consola web del registry (evidencia visual). Se usa con port-forward: make registry-ui -> http://localhost:8888
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: schema-registry-ui
+  namespace: team-platform-events
+  labels: { app: schema-registry-ui, parkglobal.io/team: platform-events }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: schema-registry-ui }
+  template:
+    metadata:
+      labels: { app: schema-registry-ui }
+    spec:
+      containers:
+        - name: ui
+          image: apicurio/apicurio-registry-ui:3.3.4
+          ports:
+            - { name: http, containerPort: 8080 }
+          env:
+            - { name: REGISTRY_API_URL, value: "http://localhost:8080/apis/registry/v3" }
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: schema-registry-ui
+  namespace: team-platform-events
+spec:
+  selector: { app: schema-registry-ui }
+  ports:
+    - { name: http, port: 8080, targetPort: http }

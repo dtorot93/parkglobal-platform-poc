@@ -1,0 +1,60 @@
+# Dueño de pricing.state.zone-tariff.v1 (outbox transaccional + relay).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tarifas
+  namespace: team-tarifas
+  labels: { app: tarifas, parkglobal.io/golden-path-demo: ecst }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # volumen RWO
+  selector:
+    matchLabels: { app: tarifas }
+  template:
+    metadata:
+      labels: { app: tarifas }
+    spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: app
+          image: parkglobal/ecst-demo:0.1.7
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP, value: tarifas }
+          # Todo lo que el equipo configura del bus de eventos: referenciar el ConfigMap que creó la plataforma.
+          envFrom:
+            - prefix: TARIFFS_
+              configMapRef: { name: pricing.state.zone-tariff.v1-client }
+          ports:
+            - { name: http, containerPort: 8000 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: ["ALL"] } }
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: tarifas-data }   # estado del PRODUCTOR: durable (en ParkGlobal, Aurora)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tarifas
+  namespace: team-tarifas
+spec:
+  selector: { app: tarifas }
+  ports:
+    - { name: http, port: 8000, targetPort: http }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tarifas-data
+  namespace: team-tarifas
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: { storage: 100Mi }

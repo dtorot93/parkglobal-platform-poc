@@ -1,0 +1,56 @@
+# 01 · Estado de la capacidad · 2026-11-23T23:03:46Z
+# kubectl get eventstreamclaims, kafkatopics, jobs registradores, ConfigMaps de cliente y subjects
+
+NAMESPACE      NAME                TOPIC                          CONTRACT   COMPAT            SYNCED   READY   COMPOSITION                    COMPOSITIONREVISION                    AGE
+team-tarifas   zone-tariff-state   pricing.state.zone-tariff.v1   v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   47h
+team-zonas     zone-state          topology.state.zone.v1         v1         FULL_TRANSITIVE   True     True    eventstream-strimzi-apicurio   eventstream-strimzi-apicurio-5ec500a   47h
+
+TOPIC                          PARTITIONS   CLEANUP   READY
+pricing.state.zone-tariff.v1   3            compact   True
+topology.state.zone.v1         3            compact   True
+
+NAMESPACE      NAME                                   STATUS     COMPLETIONS   DURATION   AGE
+team-tarifas   zone-tariff-state-contract-v1-1a366e   Complete   1/1           4s         46h
+team-zonas     zone-state-contract-v1-1df6bc          Complete   1/1           4s         47h
+
+team-consumidor-c      pricing.state.zone-tariff.v1-client                    13     47h
+team-consumidor-c      topology.state.zone.v1-client                          13     47h
+team-tarifas           pricing.state.zone-tariff.v1-client                    13     47h
+team-zonas             pricing.state.zone-tariff.v1-client                    13     47h
+team-zonas             topology.state.zone.v1-client                          13     47h
+
+## Subjects y política en el registry
+200 ["pricing.state.zone-tariff.v1-value","topology.state.zone.v1-value"]
+200 {"compatibilityLevel":"FULL_TRANSITIVE"}
+200 [1]
+200 {"compatibilityLevel":"FULL_TRANSITIVE"}
+200 [1]
+
+## Metadatos de catálogo en el registry (dueño, PII, SLO, consumidores)
+200 {"name":"pricing.state.zone-tariff.v1","description":"Estado público de la tarifa de cada zona (tipos por canal, gratuidad, precio máximo diario).","owner":"","createdOn":"2026-11-21T23:51:39Z","modifiedBy":"","modifiedOn":"2026-11-22T00:05:30Z","artifactType":"AVRO","labels":{"consumers":"team-zonas,team-consumidor-c","cost-center":"CC-PRC-01","domain":"pricing","owner":"team-tarifas","pattern":"ecst-state","pii":"false","slo-p99-seconds":"5","topic":"pricing.state.zone-tariff.v1"},"artifactId":"pricing.state.zone-tariff.v1-value"}
+
+## Lo que recibe el Consumidor C (sin pedirlo a nadie)
+data:
+  COMPATIBILITY: FULL_TRANSITIVE
+  CONSUMER_AUTO_OFFSET_RESET: earliest
+  CONSUMER_GROUP_PREFIX: team-consumidor-c.pricing.state.zone-tariff.v1
+  CONTRACT_FORMAT: avro
+  KAFKA_BOOTSTRAP_SERVERS: events-kafka-bootstrap.kafka.svc:9092
+  KEY_FORMAT: <countryCode>:<zoneNo>
+  KEY_PATTERN: ^[A-Z]{2}:[0-9]+$
+  ROLE: consumer
+  SCHEMA_REGISTRY_URL: http://schema-registry.team-platform-events.svc:8080/apis/ccompat/v7
+  SERDE_AUTO_REGISTER_SCHEMAS: "false"
+  SERDE_USE_LATEST_VERSION: "false"
+  SUBJECT: pricing.state.zone-tariff.v1-value
+  TOPIC: pricing.state.zone-tariff.v1
+kind: ConfigMap
+
+## Comprobaciones
+  ✔ Los 2 claims del piloto están Ready
+  ✔ Los 2 tópicos son compactados
+  ✔ pricing.state.zone-tariff.v1-value: FULL_TRANSITIVE
+  ✔ pricing.state.zone-tariff.v1-value: versiones registradas = las del repositorio ([1])
+  ✔ topology.state.zone.v1-value: FULL_TRANSITIVE
+  ✔ topology.state.zone.v1-value: versiones registradas = las del repositorio ([1])
+  ✔ El Consumidor C recibió la configuración de los 2 streams

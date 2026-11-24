@@ -1,0 +1,28 @@
+# 09 · Sin autorregistro (auto.register.schemas=false) · 2026-11-23T23:05:22Z
+# Tarifas desplegado con un contrato que el registry no conoce; PUT SE:4021 maxDailyPriceMinor=35412
+
+2026-11-23 23:05:16,463 tarifas ERROR no se pudo publicar (el evento sigue en el outbox): The given schema does not match any schema under the subject pricing.state.zone-tariff.v1-value (HTTP status code 404, SR code 40403)
+
+## El evento NO se pierde: queda en el outbox
+{
+  "api_calls_received": 0,
+  "events_published": 0,
+  "events_consumed": 0,
+  "stale_or_duplicate_skipped": 0,
+  "tombstones_applied": 0,
+  "publish_errors": 1,
+  "poison_messages_skipped": 0,
+  "tariffs_outbox_pending": 1,
+  "app": "tarifas"
+}
+
+## Tras volver al contrato registrado: el relay publica lo pendiente (estado durable del productor, PVC)
+  "events_published": 1,
+  "tariffs_outbox_pending": 0,
+El precio 35412 llegó al Consumidor C 402 ms después de restaurar
+
+## Comprobaciones
+  ✔ El serializador rechaza el contrato no registrado (40403)
+  ✔ El evento queda pendiente en el outbox
+  ✔ Tras restaurar, el outbox queda vacío
+  ✔ El cambio retenido llega al Consumidor C

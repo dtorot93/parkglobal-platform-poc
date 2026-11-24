@@ -4,6 +4,45 @@ Un desarrollador pide una base de datos PostgreSQL con un formulario de Backstag
 
 > ParkGlobal es un nombre anonimizado. Diagrama del flujo: [docs/d9-flujo-to-be.md](docs/d9-flujo-to-be.md). Decisiones: [docs/adr/](docs/adr/). Versiones: [docs/versions.md](docs/versions.md). Evidencia: [docs/evidencia.md](docs/evidencia.md).
 
+## Proyecto 2 · Sección IV: Golden Path de eventos (ECST)
+
+Segunda capacidad de la plataforma: **publicar un stream de estado gobernado, en autoservicio**. Un equipo declara un `EventStreamClaim` con su contrato Avro. La plataforma crea el tópico compactado (Strimzi ≙ MSK), registra el contrato en Apicurio con FULL_TRANSITIVE, entrega la configuración de cliente al dueño y a cada consumidor, y publica la ficha AsyncAPI en Backstage. El piloto es el caso Tarifas → Zonas → Consumidor C de la Sección I, con la jerarquía Ciudad → Zona → Tarifa expresada por referencia.
+
+| Documento | Contenido |
+|---|---|
+| [docs/p2/arquitectura-eventos.md](docs/p2/arquitectura-eventos.md) | Propuesta de arquitectura: granularidad, nombres, compatibilidad, ECST y compactación |
+| [docs/p2/contratos.md](docs/p2/contratos.md) | Contratos `ZoneTariffState` y `ZoneState`, y política de compatibilidad con ejemplos |
+| [docs/p2/rubrica.md](docs/p2/rubrica.md) | Alineación con la rúbrica y con las responsabilidades de Sección IV |
+| [docs/p2/documentacion-interactiva.html](docs/p2/documentacion-interactiva.html) | Documentación visual e interactiva (autocontenida) |
+| ADR-005 a ADR-008 | Avro vs JSON Schema (spike), Apicurio, tópico por entidad, composición |
+
+```bash
+make events-test          # barrera 1 en local: Kyverno + contratos contra un registry efímero (igual que el CI)
+make local-up             # plataforma completa sin GitOps (mismas olas y versiones que Argo CD)
+make events-demo-build events-demo-deploy
+make events-demo          # 11 escenarios con comprobaciones -> evidence/p2/ (+ resumen.txt y kpis.env)
+make registry-ui          # consola del Schema Registry en http://localhost:8888
+python3 scripts/render_docs.py   # regenera la documentación interactiva con la evidencia nueva
+```
+
+Video de la sustentación: guion, láminas y demo guiada en [docs/p2/video/](docs/p2/video/guion.md).
+
+```yaml
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim                       # streams/tarifas/zone-tariff-state/
+metadata: { name: zone-tariff-state, namespace: team-tarifas }
+spec:
+  owner: { team: tarifas, costCenter: CC-PRC-01 }
+  domain: pricing                            # Kyverno: el dominio debe pertenecer al equipo (único escritor)
+  entity: zone-tariff                        # -> tópico pricing.state.zone-tariff.v1 (compactado)
+  key: { format: "<countryCode>:<zoneNo>", pattern: "^[A-Z]{2}:[0-9]+$" }
+  environment: dev
+  contract: { format: avro, version: 1 }     # schemas/v1.avsc ... vN.avsc, inmutables, FULL_TRANSITIVE
+  governance: { pii: false, sloP99Seconds: 5 }
+  consumers: [ { team: zonas }, { team: consumidor-c } ]
+# status: topic, subject, contractVersion, compatibility, clientConfig, topicReady, contractRegistered
+```
+
 ## Arquitectura
 
 | Capa | Pieza | Dónde |
@@ -126,6 +165,16 @@ El job `auto-merge` usa el `GITHUB_TOKEN` de Actions con `contents: write` y `pu
 | `@yarnpkg/core` sin fijar | `resolutions: 4.9.1` | La 4.9.2 se publicó con un parche local inexistente y rompe `yarn install`. |
 | `ClusterPolicy` sin advertencias | `ClusterPolicy` (deprecada en Kyverno 1.19) | El spec la exige; la migración a `ValidatingPolicy` (CEL) queda en el backlog (ADR-001). |
 | Argo CD Synced sin ajustes | `ServerSideDiff` + `ignoreDifferences` | Kyverno completa valores por defecto y el chart emite `labels: {}`; no es drift real. |
+
+### Desviaciones del Proyecto 2
+
+| Tema | Decisión | Razón |
+|---|---|---|
+| JSON Schema (borrador, diapositiva 6) | Avro | Spike: con JSON Schema y FULL_TRANSITIVE no se puede agregar ni un campo opcional en modelo cerrado o abierto (ADR-005) |
+| `kind-config.yaml` | `failCgroupV1: false` | Kubernetes 1.35 rechaza hosts con cgroup v1 (Docker Desktop sobre WSL2); sin efecto en cgroup v2 |
+| Recursos fuera del namespace del XR | provider-kubernetes v1.4.1 con RBAC mínimo | En Crossplane v2 un XR namespaced solo compone en su namespace (ADR-008) |
+| Apps de demo | `kubectl apply` (`make events-demo-deploy`) | Son cargas de los equipos, no plataforma; el Golden Path de servicios queda fuera del alcance |
+| Verificación local | `scripts/local-up.sh` | Argo CD lee `main` en GitHub; el script aplica las mismas olas para validar antes del push |
 
 ## Fuera de alcance (TODO, fase 2)
 

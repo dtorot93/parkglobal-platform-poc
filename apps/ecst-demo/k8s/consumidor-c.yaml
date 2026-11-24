@@ -1,0 +1,51 @@
+# Consumidor C: arma Ciudad -> Zonas -> Tarifa con dos streams de estado (opción A+).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumidor-c
+  namespace: team-consumidor-c
+  labels: { app: consumidor-c, parkglobal.io/golden-path-demo: ecst }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: consumidor-c }
+  template:
+    metadata:
+      labels: { app: consumidor-c }
+    spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: app
+          image: parkglobal/ecst-demo:0.1.7
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: APP, value: consumidor-c }
+          # Todo lo que el equipo configura del bus de eventos: referenciar el ConfigMap que creó la plataforma.
+          envFrom:
+            - prefix: TARIFFS_
+              configMapRef: { name: pricing.state.zone-tariff.v1-client }
+            - prefix: ZONES_
+              configMapRef: { name: topology.state.zone.v1-client }
+          ports:
+            - { name: http, containerPort: 8000 }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: ["ALL"] } }
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { memory: 256Mi }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          emptyDir: {}   # vista local del CONSUMIDOR: desechable, se reconstruye releyendo el tópico compactado
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumidor-c
+  namespace: team-consumidor-c
+spec:
+  selector: { app: consumidor-c }
+  ports:
+    - { name: http, port: 8000, targetPort: http }

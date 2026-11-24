@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Golden Path de Eventos ECST</title>
+<meta name="description" content="ParkGlobal · Proyecto 2 · Sección IV (Daniel): capacidad de gestión de eventos con Kafka, Schema Registry y ECST.">
+<style>
+:root{
+  --bg:#f6f7f9;--surface:#ffffff;--surface-2:#eef1f5;--text:#16191d;--muted:#5b6470;--border:#d9dee5;
+  --accent:#2f5bd3;--accent-soft:#e3eafc;--ok:#1f7a4d;--ok-soft:#dff3e8;--bad:#b3261e;--bad-soft:#fbe4e2;
+  --warn:#8a5a00;--warn-soft:#fbefd5;--code:#f1f3f6;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --c1:#2f5bd3;--c2:#1f7a4d;--c3:#8a5a00;--c4:#7a3fb0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1216;--surface:#171b21;--surface-2:#1f252d;--text:#e7eaee;--muted:#9aa4b2;--border:#2b323c;
+    --accent:#7c9cff;--accent-soft:#1d2a4d;--ok:#5fd39a;--ok-soft:#163327;--bad:#ff8a80;--bad-soft:#3a1d1b;
+    --warn:#f0c060;--warn-soft:#3a2e12;--code:#11151a;--shadow:none;--c1:#7c9cff;--c2:#5fd39a;--c3:#f0c060;--c4:#c39bff;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1216;--surface:#171b21;--surface-2:#1f252d;--text:#e7eaee;--muted:#9aa4b2;--border:#2b323c;
+  --accent:#7c9cff;--accent-soft:#1d2a4d;--ok:#5fd39a;--ok-soft:#163327;--bad:#ff8a80;--bad-soft:#3a1d1b;
+  --warn:#f0c060;--warn-soft:#3a2e12;--code:#11151a;--shadow:none;--c1:#7c9cff;--c2:#5fd39a;--c3:#f0c060;--c4:#c39bff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px}
+pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:12px 14px;overflow:auto;max-height:420px;margin:0}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center}
+.brand{font-weight:700;white-space:nowrap}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:thin}
+nav.tabs button{border:1px solid transparent;background:none;color:var(--muted);padding:6px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;font:inherit;font-size:13.5px}
+nav.tabs button:hover{color:var(--text);background:var(--surface-2)}
+nav.tabs button[aria-selected="true"]{color:var(--accent);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 9px;cursor:pointer}
+main{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+section.panel{display:none}
+section.panel.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+h1{font-size:26px;margin:4px 0 6px;letter-spacing:-.01em}
+h2{font-size:20px;margin:26px 0 10px}
+h3{font-size:16px;margin:18px 0 8px}
+p.lead{color:var(--muted);margin:0 0 16px;max-width:860px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:860px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.kpi{padding:14px 16px}
+.kpi .v{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.kpi .l{color:var(--muted);font-size:13px}
+.kpi .d{font-size:12.5px;margin-top:4px}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em}
+.tablewrap{overflow-x:auto}
+.verdict{display:flex;gap:14px;align-items:flex-start;border-left:4px solid var(--warn);background:var(--warn-soft)}
+.verdict .big{font-size:22px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--surface);color:var(--muted);padding:7px 12px;cursor:pointer;font:inherit;font-size:13.5px;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.muted{color:var(--muted)}
+details{border:1px solid var(--border);border-radius:10px;background:var(--surface);margin:8px 0}
+details summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:center}
+details summary::-webkit-details-marker{display:none}
+details summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg)}
+details .body{padding:0 14px 14px}
+/* diagrama */
+.diagram{width:100%;height:auto}
+.diagram .box{fill:var(--surface);stroke:var(--border);stroke-width:1.2}
+.diagram .lane{fill:var(--surface-2);stroke:none}
+.diagram text{fill:var(--text);font-size:12px}
+.diagram .lanelabel{fill:var(--muted);font-size:11px;font-weight:600;letter-spacing:.06em}
+.diagram .node{cursor:pointer}
+.diagram .node:hover .box,.diagram .node.sel .box{stroke:var(--accent);stroke-width:2}
+.diagram .edge{stroke:var(--muted);stroke-width:1.4;fill:none}
+.diagram .edge.hot{stroke:var(--accent);stroke-width:2.2}
+.diagram .edge.bad{stroke:var(--bad);stroke-dasharray:5 4}
+.diagram .tag{font-size:10.5px;fill:var(--muted)}
+.diagram .pkt{fill:var(--accent)}
+.diagram .pkt.bad{fill:var(--bad)}
+.side{min-height:120px}
+/* flujo */
+.steps{counter-reset:s;display:grid;gap:8px}
+.step{display:flex;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);opacity:.45;transition:opacity .2s,border-color .2s}
+.step.on{opacity:1;border-color:var(--accent)}
+.step .n{flex:0 0 26px;height:26px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:700;font-size:12.5px}
+.step.on .n{background:var(--accent);color:#fff}
+.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit;font-size:13.5px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.5;cursor:default}
+/* schema */
+.field-row td:first-child{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+tr.added td{background:var(--ok-soft)}
+tr.removed td{background:var(--bad-soft);text-decoration:line-through;color:var(--bad)}
+.result{padding:12px 14px;border-radius:10px;margin-top:10px;font-size:14px}
+.result.ok{background:var(--ok-soft);color:var(--ok)}
+.result.bad{background:var(--bad-soft);color:var(--bad)}
+/* barras */
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:200px 1fr 90px;gap:10px;align-items:center;font-size:13.5px}
+@media (max-width:640px){.bar{grid-template-columns:1fr}}
+.bar .track{height:14px;background:var(--surface-2);border-radius:7px;overflow:hidden}
+.bar .fill{height:100%;border-radius:7px;background:var(--c1);transition:width .6s ease}
+.bar .fill.alt{background:var(--c3)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--border)}
+.check input{margin-top:4px}
+.progress{height:10px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.progress > div{height:100%;background:var(--ok);transition:width .3s}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:8px;margin:12px 0}
+.footer{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--border);padding-top:12px}
+.evtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">Golden Path de Eventos<small>ParkGlobal · P2 · Sección IV · Daniel</small></div>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button role="tab" data-tab="resumen">Resumen</button>
+      <button role="tab" data-tab="viabilidad">Viabilidad</button>
+      <button role="tab" data-tab="arquitectura">Arquitectura</button>
+      <button role="tab" data-tab="flujo">Flujo ECST</button>
+      <button role="tab" data-tab="contratos">Contratos</button>
+      <button role="tab" data-tab="decisiones">Decisiones</button>
+      <button role="tab" data-tab="evidencia">Evidencia</button>
+      <button role="tab" data-tab="rubrica">Rúbrica</button>
+      <button role="tab" data-tab="reproducir">Reproducir</button>
+    </nav>
+    <button class="theme-btn" id="themeBtn" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  </div>
+</header>
+
+<main>
+<!-- ============================== RESUMEN ============================== -->
+<section class="panel" id="resumen">
+  <span class="pill acc">Proyecto 2 · Sección IV · Extensión de la PoC</span>
+  <h1>Publicar un stream de estado gobernado, en autoservicio</h1>
+  <p class="lead">Capacidad de la plataforma de gestión de eventos. Un equipo declara un <code>EventStreamClaim</code> con su contrato Avro. La plataforma crea el tópico compactado, registra el contrato con FULL_TRANSITIVE, entrega la configuración de cliente al dueño y a cada consumidor, y publica la ficha del stream en el catálogo. El piloto es el caso <b>Tarifas → Zonas → Consumidor C</b> de la Sección I, con la jerarquía <b>Ciudad → Zona → Tarifa</b> resuelta por referencia (opción A+).</p>
+  <div class="grid g4">
+    <div class="card kpi"><div class="l">Llamadas síncronas por cambio de tarifa</div><div class="v">≥4 → 0</div><div class="d muted">medido: 0 llamadas a la API de Tarifas</div></div>
+    <div class="card kpi"><div class="l">Entrega commit → vista local</div><div class="v">p99 __P99__ ms</div><div class="d muted">p50 __P50__ ms · __N__ cambios medidos · SLO p99 &lt; 5 000 ms</div></div>
+    <div class="card kpi"><div class="l">Stream gobernado listo (claim → Ready)</div><div class="v">__LEAD__ s</div><div class="d muted">mediana __LEADMED__ s en __LEADN__ streams nuevos; el tópico y el contrato están listos en segundos</div></div>
+    <div class="card kpi"><div class="l">Cambio incompatible</div><div class="v">2 barreras</div><div class="d muted">CI en rojo + 409 en el registry</div></div>
+  </div>
+  <h2>Qué hay en este documento</h2>
+  <div class="grid g3">
+    <div class="card"><b>Viabilidad</b><p class="muted">Por qué la idea original (agregado Ciudad anidado) se reencuadró y qué ambigüedades había en los insumos.</p></div>
+    <div class="card"><b>Arquitectura y flujo</b><p class="muted">Diagrama interactivo por planos y una simulación paso a paso del antes (REST) y el después (ECST).</p></div>
+    <div class="card"><b>Contratos y gobierno</b><p class="muted">Contratos Avro reales, un simulador de evolución y la matriz del spike JSON Schema vs Avro.</p></div>
+  </div>
+  <div class="callout"><b>Herramientas (todas open source):</b> Strimzi 1.3.0 (Kafka 4.3.1, KRaft) · Apicurio Registry 3.3.4 · Crossplane v2 + provider-kubernetes · Kyverno · Argo CD · Backstage · CloudNativePG (base del registry pedida con el Golden Path del P1).</div>
+</section>
+
+<!-- ============================== VIABILIDAD ============================== -->
+<section class="panel" id="viabilidad">
+  <h1>Paso 0 · Análisis de viabilidad</h1>
+  <p class="lead">Propuesta inicial: un contrato para <b>Ciudades</b> con su jerarquía interna (Ciudades → Zonas → Tarifas) y propagar hacia la ciudad cada cambio de una zona o una tarifa.</p>
+  <div class="card verdict"><div class="big">⚖️</div><div><b>Veredicto: viable con ajustes de fondo.</b> La intuición era correcta (contrato registrado y estado que llega a los consumidores sin llamadas síncronas), pero había tres problemas. (1) El contrato y el flujo ECST eran tarea de Juan, no de Daniel. (2) Contradecía el diseño del equipo (Tarifas → Zonas, <code>ZoneTariffState</code>). (3) El agregado anidado es un antipatrón para ECST en este caso. <b>Opción elegida: A+</b>: capacidad de plataforma <code>EventStreamClaim</code>, con piloto <code>ZoneTariffState</code> más <code>ZoneState</code>, y la jerarquía por referencia.</div></div>
+
+  <h2>Granularidad: compara las alternativas</h2>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="granSeg" role="group" aria-label="Alternativa">
+      <button aria-pressed="true" data-g="entidad">Tópico por entidad</button>
+      <button aria-pressed="false" data-g="ciudad">Ciudad anidada</button>
+      <button aria-pressed="false" data-g="derivada">Ciudad derivada (stream processing)</button>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><svg class="diagram" id="granSvg" viewBox="0 0 520 250" role="img" aria-label="Diagrama de la alternativa"></svg></div>
+    <div class="card"><div class="tablewrap"><table id="granTable"></table></div></div>
+  </div>
+
+  <h2>Ambigüedades detectadas en los insumos</h2>
+  <div class="tablewrap card"><table>
+    <tr><th>#</th><th>Ambigüedad</th><th>Resolución</th></tr>
+    <tr><td>1</td><td><code>enunciado_proyecto_parte_2.pdf</code> es idéntico byte a byte al de la parte 1 (mismo MD5)</td><td>Los requisitos reales salen de <code>responsables.xlsx</code> y <code>rubrica.pdf</code>; conviene confirmarlo con el docente</td></tr>
+    <tr><td>2</td><td>«Ciudades» no aparece en la Parte 2; no queda claro si una zona tiene una o varias tarifas</td><td>Agregado = la zona (con sus tarifas); la ciudad se modela por referencia (<code>cityId</code>)</td></tr>
+    <tr><td>3</td><td>Sección IV asignada a «Daniel / Felipe»</td><td>Confirmado: Daniel la ejecuta completa</td></tr>
+    <tr><td>4</td><td>JSON Schema + FULL_TRANSITIVE (diapositiva 6) contradice sus propias notas sobre <code>additionalProperties</code></td><td>Spike empírico en dos registries → Avro (ADR-005)</td></tr>
+    <tr><td>5</td><td>¿El outbox o el CDC entran en la PoC?</td><td>Outbox en el servicio de referencia; Debezium en la fase 2</td></tr>
+    <tr><td>6</td><td>«Registry obligatorio» frente a Kafka OSS, que no valida en el broker</td><td>Escritor único por dominio + <code>auto.register.schemas=false</code> + CI + 409</td></tr>
+    <tr><td>7</td><td>La PoC del P1 se fijó en macOS; aquí el entorno es WSL2 con cgroup v1</td><td><code>failCgroupV1: false</code> en kind (sin efecto en cgroup v2)</td></tr>
+    <tr><td>8</td><td>GitOps lee <code>main</code>, pero sin permiso de push</td><td><code>scripts/local-up.sh</code> aplica las mismas olas en local</td></tr>
+  </table></div>
+</section>
+
+<!-- ============================== ARQUITECTURA ============================== -->
+<section class="panel" id="arquitectura">
+  <h1>Arquitectura de la capacidad</h1>
+  <p class="lead">Haz clic en un componente para ver su papel, la pieza equivalente en ParkGlobal y dónde vive en el repositorio.</p>
+  <div class="grid" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+    <div class="card"><svg class="diagram" id="archSvg" viewBox="0 0 760 470" role="img" aria-label="Arquitectura por planos"></svg></div>
+    <div class="card side" id="archInfo"><b>Selecciona un componente</b><p class="muted">Los planos siguen el modelo del curso: Desarrollador, Integración y entrega, Control Plane (Platform API), Recursos y equipos stream-aligned.</p></div>
+  </div>
+  <style>@media (max-width:860px){#arquitectura .grid{grid-template-columns:1fr!important}}</style>
+
+  <h2>Estrategia de plataforma</h2>
+  <div class="grid g2">
+    <div class="card"><h3>Granularidad y nombres</h3><table>
+      <tr><td>Tópico</td><td><code>&lt;dominio&gt;.state.&lt;entidad&gt;.v&lt;major&gt;</code></td></tr>
+      <tr><td>Subject</td><td>TopicNameStrategy · <code>&lt;tópico&gt;-value</code></td></tr>
+      <tr><td>Clave</td><td>string sin esquema · <code>SE:4021</code></td></tr>
+      <tr><td>Escritor</td><td>uno por dominio (Kyverno lo exige al declarar; el bus de la PoC no tiene ACL)</td></tr>
+      <tr><td>Configuración de cliente</td><td><code>&lt;tópico&gt;-client</code> en cada namespace</td></tr>
+    </table></div>
+    <div class="card"><h3>Estado con ECST y compactación</h3><table>
+      <tr><td><code>cleanup.policy</code></td><td>compact (una foto por clave)</td></tr>
+      <tr><td><code>min.compaction.lag.ms</code></td><td>60 000</td></tr>
+      <tr><td><code>delete.retention.ms</code></td><td>7 días (visibilidad del tombstone)</td></tr>
+      <tr><td><code>segment.ms</code></td><td>10 min dev · 1 h staging</td></tr>
+      <tr><td>Particiones</td><td>small 3 · standard 6 · fijas</td></tr>
+      <tr><td>Borrar el claim</td><td>el tópico <b>se conserva</b></td></tr>
+    </table></div>
+  </div>
+  <h2>Lo que el desarrollador ya no tiene que saber</h2>
+  <div class="tablewrap card"><table>
+    <tr><th>Antes: lo decide y configura cada equipo</th><th>Ahora: lo declara el equipo (7 campos obligatorios + contrato)</th></tr>
+    <tr><td>Nombre del tópico, particiones, réplicas, <code>cleanup.policy</code>, <code>segment.ms</code>, <code>delete.retention.ms</code>, <code>min.compaction.lag.ms</code></td><td>Entidad, dominio y entorno: la plataforma deriva el nombre y aplica un perfil fijo</td></tr>
+    <tr><td>Estrategia de subject, modo de compatibilidad, registro del esquema</td><td>El contrato Avro: FULL_TRANSITIVE fijo y registrado por la plataforma</td></tr>
+    <tr><td>Bootstrap, URL del registry, <code>auto.register.schemas</code>, <code>use.latest.version</code>, en cada servicio</td><td>Un <code>envFrom</code> por stream (3 líneas) del ConfigMap que crea la plataforma</td></tr>
+    <tr><td>Avisar a cada consumidor y pedirle que configure lo mismo</td><td>La lista de consumidores: cada uno recibe su configuración</td></tr>
+    <tr><td>Coordinar en reuniones si un cambio rompe a alguien</td><td>Nada: el CI señala el campo exacto que rompe</td></tr>
+  </table><p class="muted" style="margin:10px 0 0">El formulario tiene 11 campos; 4 son opcionales con valor por defecto (consumidores, PII, SLO, descripción).</p></div>
+</section>
+
+<!-- ============================== FLUJO ============================== -->
+<section class="panel" id="flujo">
+  <h1>Flujo de eventos: antes y después</h1>
+  <p class="lead">Simulación del cambio de una tarifa. Elige un escenario y avanza paso a paso, o reprodúcelo completo.</p>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="flowSeg" role="group" aria-label="Escenario">
+      <button aria-pressed="true" data-f="tobe">Con ECST (propuesto)</button>
+      <button aria-pressed="false" data-f="asis">Hoy (aviso + REST)</button>
+      <button aria-pressed="false" data-f="down">ECST con Tarifas caído</button>
+      <button aria-pressed="false" data-f="replay">Consumidor nuevo (relectura)</button>
+    </div>
+    <button class="btn" id="flowPrev">◀ Anterior</button>
+    <button class="btn primary" id="flowNext">Siguiente ▶</button>
+    <button class="btn" id="flowPlay">▶ Reproducir</button>
+  </div>
+  <div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(0,2fr)">
+    <div class="card"><svg class="diagram" id="flowSvg" viewBox="0 0 640 330" role="img" aria-label="Flujo de eventos"></svg>
+      <div class="row" style="margin-top:8px"><span class="pill" id="callCount">Llamadas síncronas: 0</span><span class="pill" id="flowNote"></span></div></div>
+    <div class="steps" id="flowSteps"></div>
+  </div>
+  <style>@media (max-width:860px){#flujo .grid{grid-template-columns:1fr!important}}</style>
+  <h2>Contrato de consumo (implementación de referencia)</h2>
+  <div class="grid g3">
+    <div class="card"><b>Upsert idempotente</b><p class="muted">Se aplica solo si <code>version</code> es mayor que la guardada; los duplicados y desórdenes se descartan. La versión es monotónica incluso a través de una baja.</p></div>
+    <div class="card"><b>Tombstone = borrar</b><p class="muted">Un valor nulo elimina la clave en la vista; la compactación lo retira del log pasado <code>delete.retention.ms</code>.</p></div>
+    <div class="card"><b>Vista desechable</b><p class="muted">Si la vista arranca vacía, se relee el tópico desde el offset 0, partición por partición, sin importar los offsets confirmados del grupo. Hallazgo de la PoC.</p></div>
+  </div>
+</section>
+
+<!-- ============================== CONTRATOS ============================== -->
+<section class="panel" id="contratos">
+  <h1>Contratos y gobierno</h1>
+  <p class="lead">Contratos Avro reales del repositorio, listos para registrar. La política es <b>FULL_TRANSITIVE</b>: cada versión lee y es leída por todas las anteriores, porque los despliegues ocurren en cualquier orden y el tópico compactado se relee desde el inicio.</p>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="schemaSeg" role="group" aria-label="Contrato">
+      <button aria-pressed="true" data-s="zt">ZoneTariffState · pricing.state.zone-tariff.v1</button>
+      <button aria-pressed="false" data-s="zs">ZoneState · topology.state.zone.v1</button>
+    </div>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="tablewrap"><table id="schemaTable"></table></div></div>
+    <div class="card"><pre id="schemaRaw"></pre></div>
+  </div>
+
+  <h2>Simulador de evolución (casos ejecutados contra Apicurio)</h2>
+  <div class="row" style="margin-bottom:10px">
+    <div class="seg" id="evoSeg" role="group" aria-label="Cambio propuesto">
+      <button aria-pressed="true" data-e="compat">v2: agregar maxSessionMinutes (opcional)</button>
+      <button aria-pressed="false" data-e="breaking">v2: eliminar currency</button>
+      <button aria-pressed="false" data-e="nodefault">v2: campo nuevo sin default</button>
+    </div>
+  </div>
+  <div class="card"><div class="tablewrap"><table id="evoTable"></table></div><div id="evoResult"></div></div>
+
+  <h2>Spike: JSON Schema vs Avro bajo FULL_TRANSITIVE</h2>
+  <p class="muted">Ejecutado el 21-11-2026 contra Apicurio 3.3.4 y Karapace 6.2.4 (<code>evidence/p2/00-spike-compatibilidad.txt</code>). Filtra por formato:</p>
+  <div class="row" style="margin-bottom:8px"><div class="seg" id="spikeSeg"><button aria-pressed="true" data-k="all">Todo</button><button aria-pressed="false" data-k="json">JSON Schema</button><button aria-pressed="false" data-k="avro">Avro</button></div></div>
+  <div class="card tablewrap"><table id="spikeTable"></table></div>
+  <div class="callout">Conclusión: con JSON Schema y FULL_TRANSITIVE <b>no se puede agregar ni un campo opcional</b> en modelo cerrado o abierto, y los modelos parcialmente abiertos dan resultados distintos según el registry. Avro sigue una regla simple y estándar: campo con default = compatible. → ADR-005.</div>
+
+  <h2>Dos barreras de gobierno</h2>
+  <div class="grid g2">
+    <div class="card"><span class="pill acc">Barrera 1 · PR</span><h3>CI con registry efímero</h3><p class="muted">Kyverno (dueño, dominio propio, sin PII, centro de costo) + estructura + inmutabilidad de versiones + compatibilidad contra la misma imagen de Apicurio que producción. El error señala el campo: <code>[currency at /fields/6]</code>.</p></div>
+    <div class="card"><span class="pill acc">Barrera 2 · Clúster</span><h3>Registry + Kyverno en la admisión</h3><p class="muted">Si alguien salta el CI, el Job registrador recibe <b>409</b>, el claim no queda Ready y un productor con la configuración de la plataforma no puede serializar con ese esquema (<code>auto.register.schemas=false</code> → 40403). El evento queda en el outbox, sin perderse. Kafka no valida los mensajes y el bus de la PoC no tiene autenticación: un cliente que escriba bytes a mano se salta esta barrera.</p></div>
+  </div>
+</section>
+
+<!-- ============================== DECISIONES ============================== -->
+<section class="panel" id="decisiones">
+  <h1>Decisiones técnicas (ADR)</h1>
+  <p class="lead">Cada decisión registra las alternativas consideradas y su justificación.</p>
+  <div id="adrList"></div>
+</section>
+
+<!-- ============================== EVIDENCIA ============================== -->
+<section class="panel" id="evidencia">
+  <h1>Evidencia de la PoC</h1>
+  <p class="lead">11 escenarios reproducibles con <code>make events-demo</code> sobre el clúster local. Cada escenario comprueba sus afirmaciones: __CHECKS__ (<code>evidence/p2/resumen.txt</code>). Salida real en <code>evidence/p2/</code>, generada el __EVDATE__.</p>
+  <div class="grid g4" id="evKpis"></div>
+  <h2>Antes y después</h2>
+  <div class="card"><div class="bars" id="beforeAfter"></div></div>
+  <h2>Salida de cada escenario</h2>
+  <div class="evtabs" id="evTabs"></div>
+  <pre id="evOut"></pre>
+  <h2>Hallazgos durante la construcción</h2>
+  <div class="tablewrap card"><table>
+    <tr><th>Hallazgo</th><th>Corrección</th><th>Por qué importa</th></tr>
+    <tr><td>Vista local vacía + offsets del grupo ya confirmados = vista incompleta para siempre</td><td>Relectura desde el offset 0, decidida por partición</td><td>Trampa clásica de ECST con almacenamiento efímero</td></tr>
+    <tr><td>La asignación de particiones llega en varias llamadas (rolling update)</td><td>Rebobinado por partición + cierre ordenado ante SIGTERM</td><td>La relectura pasó de ~75 s a __REPLAY__ s</td></tr>
+    <tr><td>Tras una baja, la versión volvía a 1</td><td>Versión monotónica a través del tombstone</td><td>Un consumidor que se perdió la baja no ignora la nueva tarifa</td></tr>
+    <tr><td>El Job de contrato es inmutable</td><td>Nombre lógico del recurso compuesto con versión y hash</td><td>La evolución v1→v2 por el Golden Path funciona sin intervención</td></tr>
+    <tr><td>El estado del productor estaba en almacenamiento efímero</td><td>PVC para los productores; la vista del consumidor sigue siendo desechable</td><td>El productor es la fuente de verdad; el consumidor, una proyección</td></tr>
+    <tr><td>El cliente del Schema Registry no tiene timeout por defecto: una respuesta perdida lo bloquea para siempre</td><td>Timeout de 10 s en el relay y en los consumidores</td><td>Un relay colgado detiene la publicación sin ningún error visible</td></tr>
+    <tr><td>Un mensaje ilegible mataba el hilo del consumidor</td><td>Se omite, se registra y se cuenta (<code>poison_messages_skipped</code>); fase 2: DLQ</td><td>Kafka no valida mensajes: una sola escritura mala congelaba la vista</td></tr>
+    <tr><td>El lead time se había medido una sola vez (4,5 s)</td><td>__LEADN__ muestras con desglose por hito</td><td>El Ready llega en __LEAD__ s: provider-kubernetes ve el tópico listo por sondeo</td></tr>
+    <tr><td>La evidencia de evolución v2 no la probaba: la v2 ya estaba registrada y nadie escribía con ella</td><td>Stream desechable: registro real de la v2, un productor escribe con v2 y un lector v1 lee el mensaje</td><td>Es la afirmación central del contrato; ahora está demostrada</td></tr>
+    <tr><td>El script de evidencia casi no comprobaba resultados</td><td>Una comprobación ✔/✘ por afirmación y código de salida</td><td>«Corrió» no es lo mismo que «funcionó»</td></tr>
+  </table></div>
+</section>
+
+<!-- ============================== RÚBRICA ============================== -->
+<section class="panel" id="rubrica">
+  <h1>Cumplimiento de la rúbrica</h1>
+  <p class="lead">Marca cada evidencia al revisarla antes de la sustentación. Se guarda solo en este navegador.</p>
+  <div class="card"><div class="row" style="justify-content:space-between"><b id="rubProgressLabel"></b><span class="muted">Puntaje objetivo de la Sección IV: 20/20 (Nivel 4)</span></div><div class="progress" style="margin-top:8px"><div id="rubProgress"></div></div></div>
+  <div id="rubList"></div>
+</section>
+
+<!-- ============================== REPRODUCIR ============================== -->
+<section class="panel" id="reproducir">
+  <h1>Cómo reproducirlo</h1>
+  <div class="grid g2">
+    <div class="card"><h3>1 · Barrera del CI en local</h3><pre>make events-test</pre><p class="muted">Kyverno + contratos contra Apicurio efímero; el caso sin <code>currency</code> debe fallar.</p></div>
+    <div class="card"><h3>2 · Plataforma completa</h3><pre>make local-up      # ≈9 min la primera vez
+make events-status</pre><p class="muted">Mismas olas y versiones que Argo CD, sin necesidad de push.</p></div>
+    <div class="card"><h3>3 · Servicios de demostración</h3><pre>make events-demo-build events-demo-deploy</pre><p class="muted">Tarifas (outbox), Zonas (vista y productor) y Consumidor C (Ciudad → Zonas → Tarifa).</p></div>
+    <div class="card"><h3>4 · Escenarios y evidencia</h3><pre>make events-demo            # todos
+make events-demo ESC="02 07"  # algunos
+make registry-ui            # http://localhost:8888</pre></div>
+  </div>
+  <h2>Un stream nuevo, como lo vería un equipo</h2>
+  <pre>__CLAIM__</pre>
+  <p class="muted">En Backstage: plantilla «Publicar stream de estado (ECST)» → PR <code>stream/&lt;entidad&gt;-state</code> → CI → auto-merge → Argo CD (ApplicationSet <code>streams</code>).</p>
+  <div class="footer">ParkGlobal es un nombre anonimizado. Generado el __DATE__ a partir de los archivos del repositorio <code>parkglobal-platform-poc</code> (contratos, claims y <code>evidence/p2</code>).</div>
+</section>
+</main>
+
+<script>
+const DATA = __DATA__;
+
+/* ---------- tema y pestañas ---------- */
+const root = document.documentElement;
+const store = { get(k){ try{return localStorage.getItem(k)}catch(e){return null} }, set(k,v){ try{localStorage.setItem(k,v)}catch(e){} } };
+const savedTheme = store.get("pg-theme"); if (savedTheme) root.dataset.theme = savedTheme;
+document.getElementById("themeBtn").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark"; store.set("pg-theme", root.dataset.theme);
+};
+const tabs = [...document.querySelectorAll("nav.tabs button")];
+function show(id){
+  tabs.forEach(b => b.setAttribute("aria-selected", b.dataset.tab === id));
+  document.querySelectorAll("section.panel").forEach(s => s.classList.toggle("active", s.id === id));
+  if (history.replaceState) history.replaceState(null, "", "#" + id);
+  window.scrollTo({top:0});
+}
+tabs.forEach(b => b.onclick = () => show(b.dataset.tab));
+show((location.hash || "#resumen").slice(1) in {resumen:1,viabilidad:1,arquitectura:1,flujo:1,contratos:1,decisiones:1,evidencia:1,rubrica:1,reproducir:1} ? location.hash.slice(1) || "resumen" : "resumen");
+
+function seg(id, cb){
+  const el = document.getElementById(id);
+  el.querySelectorAll("button").forEach(b => b.onclick = () => {
+    el.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); cb(b.dataset);
+  });
+}
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const SVG = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs, parent){ const e = document.createElementNS(SVG, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function box(svg, x, y, w, h, label, sub, cls){
+  const g = svgEl("g", {class: "node " + (cls||"")}, svg);
+  svgEl("rect", {x, y, width:w, height:h, rx:8, class:"box"}, g);
+  const t = svgEl("text", {x: x + w/2, y: y + (sub ? h/2 - 3 : h/2 + 4), "text-anchor":"middle", "font-weight":600}, g); t.textContent = label;
+  if (sub){ const s = svgEl("text", {x: x + w/2, y: y + h/2 + 12, "text-anchor":"middle", class:"tag"}, g); s.textContent = sub; }
+  return g;
+}
+function arrow(svg){ const d = svgEl("defs", {}, svg);
+  ["m","mh","mb"].forEach((id,i)=>{ const m = svgEl("marker",{id:id+svg.id,viewBox:"0 0 10 10",refX:9,refY:5,markerWidth:7,markerHeight:7,orient:"auto-start-reverse"},d);
+    svgEl("path",{d:"M0,0 L10,5 L0,10 z",fill:["var(--muted)","var(--accent)","var(--bad)"][i]},m); }); }
+function line(svg, x1, y1, x2, y2, cls, label){
+  const p = svgEl("path", {d:`M${x1},${y1} L${x2},${y2}`, class:"edge " + (cls||""), "marker-end":`url(#${cls==="hot"?"mh":cls==="bad"?"mb":"m"}${svg.id})`}, svg);
+  if (label){ const t = svgEl("text",{x:(x1+x2)/2 + 4, y:(y1+y2)/2 - 5, class:"tag"}, svg); t.textContent = label; }
+  return p;
+}
+
+/* ---------- viabilidad: granularidad ---------- */
+const GRAN = {
+  entidad: {rows:[["Escritores por clave","1 (Tarifas o Zonas)","ok"],["Tamaño del mensaje","una zona (~200 B)","ok"],["Orden","por zona","ok"],["Evolución","independiente por dominio","ok"],["Coherencia con el PPTX","total","ok"],["Costo para la TVP","bajo","ok"]]},
+  ciudad: {rows:[["Escritores por clave","2+ (colisión) o un agregador nuevo","bad"],["Tamaño del mensaje","toda la ciudad (riesgo > 1 MB)","bad"],["Orden","por ciudad (partición caliente)","bad"],["Evolución","acoplada: un cambio de tarifa versiona ciudades","bad"],["Coherencia con el PPTX","contradice Tarifas → Zonas","bad"],["Patrón","riesgo de deltas o cadena de eventos","bad"]]},
+  derivada: {rows:[["Escritores por clave","1 (el procesador)","ok"],["Tamaño del mensaje","toda la ciudad","warn"],["Orden","por ciudad","warn"],["Evolución","depende de 2 fuentes","warn"],["Coherencia con el PPTX","parcial","warn"],["Costo para la TVP","alto (stream processing, Nivel 2)","bad"]]},
+};
+function drawGran(k){
+  const svg = document.getElementById("granSvg"); svg.innerHTML = ""; arrow(svg);
+  if (k === "entidad"){
+    box(svg,20,30,130,46,"Tarifas","dueño pricing"); box(svg,20,150,130,46,"Zonas","dueño topology");
+    box(svg,200,30,150,46,"zone-tariff.v1","clave SE:4021"); box(svg,200,150,150,46,"zone.v1","clave SE:4021 · cityId");
+    box(svg,390,90,110,56,"Consumidor C","une por clave");
+    line(svg,150,53,198,53,"hot"); line(svg,150,173,198,173,"hot"); line(svg,350,58,388,108,"hot"); line(svg,350,168,388,132,"hot");
+    svgEl("text",{x:260,y:235,"text-anchor":"middle",class:"tag"},svg).textContent="Ciudad → Zona → Tarifa se compone en la vista local";
+  } else if (k === "ciudad"){
+    box(svg,20,30,130,46,"Tarifas","escribe tarifas"); box(svg,20,150,130,46,"Zonas","escribe zonas");
+    box(svg,200,80,150,66,"city.v1","{ zonas:[ {tarifas:[…]} ] }");
+    box(svg,390,90,110,46,"Consumidores");
+    line(svg,150,53,198,100,"bad","foto parcial"); line(svg,150,173,198,128,"bad","foto parcial"); line(svg,350,113,388,113,"");
+    svgEl("text",{x:260,y:235,"text-anchor":"middle",class:"tag"},svg).textContent="En un tópico compactado gana la última escritura: se pierde estado";
+  } else {
+    box(svg,10,30,110,46,"Tarifas"); box(svg,10,150,110,46,"Zonas");
+    box(svg,150,30,120,46,"zone-tariff.v1"); box(svg,150,150,120,46,"zone.v1");
+    box(svg,300,90,100,56,"Procesador","KTable join"); box(svg,420,90,90,56,"city-view","derivada");
+    line(svg,120,53,148,53,"hot"); line(svg,120,173,148,173,"hot"); line(svg,270,58,298,108,""); line(svg,270,168,298,132,""); line(svg,400,118,418,118,"");
+    svgEl("text",{x:260,y:235,"text-anchor":"middle",class:"tag"},svg).textContent="Legítimo como read model, pero exige stream processing (fuera de la TVP)";
+  }
+  document.getElementById("granTable").innerHTML = "<tr><th>Criterio</th><th>Resultado</th></tr>" +
+    GRAN[k].rows.map(r => `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[2]==="ok"?"✓":r[2]==="bad"?"✗":"◐"}</span> ${esc(r[1])}</td></tr>`).join("");
+}
+seg("granSeg", d => drawGran(d.g)); drawGran("entidad");
+
+/* ---------- arquitectura ---------- */
+const ARCH = [
+  {id:"bs",lane:0,x:40,w:200,t:"Backstage",s:"plantilla + catálogo AsyncAPI",info:"Formulario de 11 campos (7 obligatorios) más el contrato v1. Genera el claim, <code>schemas/v1.avsc</code>, <code>kustomization.yaml</code> y la ficha API (AsyncAPI) con dueño, SLO y PII.",eq:"Backstage existente",path:"backstage/templates/event-stream-claim/"},
+  {id:"gh",lane:1,x:20,w:140,t:"GitHub PR",s:"stream/<entidad>-state",info:"El PR reemplaza el ticket y es auditable. Un PR <code>stream/*</code> solo puede tocar <code>streams/</code>.",eq:"GitHub",path:".github/workflows/validate-and-merge-streams.yaml"},
+  {id:"ci",lane:1,x:180,w:200,t:"CI · barrera 1",s:"Kyverno + Apicurio efímero",info:"Políticas, estructura, inmutabilidad de versiones, catálogo semántico y FULL_TRANSITIVE contra un contenedor de servicio con la misma imagen del registry. Auto-merge si todo pasa.",eq:"GitHub Actions (runners propios)",path:"scripts/contracts/check_contracts.py"},
+  {id:"ar",lane:1,x:400,w:150,t:"Argo CD",s:"ApplicationSet streams",info:"Una Application por <code>streams/&lt;team&gt;/&lt;stream&gt;</code>; kustomize genera el ConfigMap del contrato desde los .avsc.",eq:"Argo CD existente",path:"platform/argocd/streams-appset.yaml"},
+  {id:"ky",lane:2,x:20,w:150,t:"Kyverno",s:"admisión · barrera 2",info:"Escritor único por dominio, sin PII en la TVP, namespace del dueño, centro de costo y etiquetas FinOps. Son las mismas políticas que en el CI.",eq:"Kyverno",path:"platform/kyverno/policies/eventstream-*.yaml"},
+  {id:"xrd",lane:2,x:190,w:170,t:"EventStreamClaim",s:"XRD v1alpha1",info:"El contrato de la Platform API: dominio, entidad, clave, perfil, contrato, gobierno y consumidores. Expone <code>status.topic/subject/contractVersion</code>.",eq:"Mismo patrón que DatabaseClaim y APIClaim",path:"platform/crossplane/xrd-eventstreamclaim.yaml"},
+  {id:"cmp",lane:2,x:380,w:200,t:"Composition",s:"strimzi-apicurio",info:"Compone un Object → KafkaTopic compactado, el Job registrador (v1..vN, FULL_TRANSITIVE y metadatos) y la configuración de cliente para el dueño y cada consumidor. Ready = tópico ∧ contrato.",eq:"eventstream-msk-apicurio (provider-kafka) en AWS",path:"platform/crossplane/composition-eventstream-strimzi-apicurio.yaml"},
+  {id:"pk",lane:2,x:600,w:140,t:"provider-kubernetes",s:"RBAC mínimo",info:"Crea recursos fuera del namespace del XR (KafkaTopic en <code>kafka</code> y ConfigMaps en los namespaces consumidores). Solo tiene permisos sobre kafkatopics y configmaps.",eq:"—",path:"platform/crossplane/provider-kubernetes.yaml"},
+  {id:"st",lane:3,x:60,w:240,t:"Strimzi · Kafka 4.3.1",s:"KRaft · auto.create=false",info:"Broker de la PoC. Los tópicos solo nacen por el Golden Path.",eq:"Amazon MSK (1 clúster por región)",path:"platform/events/kafka-cluster.yaml"},
+  {id:"ap",lane:3,x:360,w:260,t:"Apicurio Registry 3.3.4",s:"ccompat + v3 · PostgreSQL (DatabaseClaim)",info:"API compatible con Confluent para los serializadores; API v3 para metadatos de catálogo. Su base se pidió con el Golden Path del P1 (dogfooding).",eq:"Registry de 2018 solo Avro → reemplazo",path:"platform/registry/"},
+  {id:"t",lane:4,x:30,w:180,t:"Tarifas",s:"outbox → zone-tariff.v1",info:"Guarda la tarifa y la fila de outbox en una sola transacción; un relay publica tras el commit. Sin espera fija de 5 s.",eq:"Servicio de Tarifas",path:"apps/ecst-demo/ecst_demo.py"},
+  {id:"z",lane:4,x:280,w:180,t:"Zonas",s:"vista local · zone.v1",info:"Consume tarifas en una vista local y publica ZoneState (con cityId). Responde sin llamar a Tarifas ni a Core.",eq:"Servicio de Zonas",path:"apps/ecst-demo/k8s/zonas.yaml"},
+  {id:"c",lane:4,x:530,w:200,t:"Consumidor C",s:"Ciudad → Zonas → Tarifa",info:"Une dos streams por clave, agrupa por cityId y decide tipo de carga y comisión sin llamadas síncronas.",eq:"Consumidor C",path:"apps/ecst-demo/k8s/consumidor-c.yaml"},
+];
+const LANES = ["DESARROLLADOR","INTEGRACIÓN Y ENTREGA","CONTROL PLANE · PLATFORM API","RECURSOS","EQUIPOS STREAM-ALIGNED"];
+const ARCH_EDGES = [["bs","gh"],["gh","ci"],["ci","ar"],["ar","ky"],["ky","xrd"],["xrd","cmp"],["cmp","pk"],["pk","st"],["cmp","ap"],["t","st"],["z","st"]];
+(function drawArch(){
+  const svg = document.getElementById("archSvg"); arrow(svg); const pos = {};
+  LANES.forEach((l,i)=>{ svgEl("rect",{x:4,y:6+i*92,width:752,height:84,rx:10,class:"lane"},svg); const t=svgEl("text",{x:14,y:22+i*92,class:"lanelabel"},svg); t.textContent=l; });
+  ARCH.forEach(n => pos[n.id] = {x:n.x, y:30+n.lane*92, w:n.w, h:50});
+  ARCH_EDGES.forEach(([a,b]) => { const A=pos[a], B=pos[b];
+    let x1=A.x+A.w/2, y1=A.y+A.h, x2=B.x+B.w/2, y2=B.y;
+    if (A.y===B.y){ x1=A.x+A.w; y1=A.y+A.h/2; x2=B.x; y2=B.y+B.h/2; }
+    if (A.y>B.y){ y1=A.y; y2=B.y+B.h; }
+    line(svg,x1,y1,x2,y2,""); });
+  ARCH.forEach(n => { const p=pos[n.id]; const g = box(svg,p.x,p.y,p.w,p.h,n.t,n.s); g.dataset.id=n.id;
+    g.setAttribute("tabindex","0"); g.setAttribute("role","button");
+    const act = () => { svg.querySelectorAll(".node").forEach(x=>x.classList.remove("sel")); g.classList.add("sel");
+      document.getElementById("archInfo").innerHTML = `<span class="pill acc">${esc(LANES[n.lane])}</span><h3>${esc(n.t)}</h3><p>${n.info}</p><p class="muted"><b>En ParkGlobal:</b> ${esc(n.eq)}</p><p class="muted"><b>Repositorio:</b> <code>${esc(n.path)}</code></p>`; };
+    g.onclick = act; g.onkeydown = e => { if (e.key==="Enter"||e.key===" "){ e.preventDefault(); act(); } }; });
+})();
+
+/* ---------- flujo ---------- */
+const FN = {T:{x:20,y:40,w:120,t:"Tarifas"},K:{x:250,y:40,w:150,t:"Kafka (compactado)"},Z:{x:500,y:40,w:120,t:"Zonas"},C:{x:500,y:240,w:120,t:"Consumidor C"},CO:{x:250,y:240,w:150,t:"Monolito Core"},CA:{x:20,y:240,w:120,t:"Caché tarifas"},API:{x:20,y:140,w:120,t:"API Tarifas"}};
+const FLOWS = {
+  tobe:{note:"0 llamadas síncronas",steps:[
+    ["T",null,"Tarifas guarda la tarifa y la fila de outbox en una sola transacción.",0],
+    ["T","K","El relay publica la foto completa de ZoneTariffState (clave SE:4021) tras el commit.",0],
+    ["K","Z","Zonas hace upsert en su vista local si la versión es mayor.",0],
+    ["K","C","El Consumidor C hace upsert, une con ZoneState y decide tipo de carga y comisión.",0],
+    [null,null,`Listo: p99 medido de ${DATA.kpis.p99} ms en ${DATA.kpis.n} cambios y 0 llamadas a la API de Tarifas.`,0]]},
+  asis:{note:"≥4 llamadas síncronas por cambio",steps:[
+    ["T","CA","Tarifas guarda y publica a la caché por un tópico interno.",0],
+    ["T","K","Espera 5 s fijos y publica el aviso «tarifa cambió» (clave = id de petición).",0],
+    ["K","Z","Zonas recibe el aviso, que no dice qué cambió…",0],
+    ["Z","CO","① Zonas llama a Core, que enruta según la zona.",1],
+    ["CO","CA","② Core pregunta a la caché de tarifas.",1],
+    ["K","C","El Consumidor C recibe el mismo aviso…",0],
+    ["C","Z","③ Llama a la API de Zonas para resolver la zona.",1],
+    ["C","API","④ Llama a la API de Tarifas para leer la tarifa completa. Si algo falla, descarta el cambio.",1]]},
+  down:{note:"disponibilidad recuperada",steps:[
+    ["T",null,"Tarifas cae (kubectl scale --replicas=0).",0],
+    [null,null,"No se publican cambios nuevos, pero el estado vigente ya está en las vistas locales.",0],
+    ["Z",null,"Zonas responde GET /zones/SE:4022 con su vista local: HTTP 200.",0],
+    ["C",null,"El Consumidor C sigue decidiendo tipo de carga y comisión: HTTP 200.",0]]},
+  replay:{note:"relectura desde el offset 0",steps:[
+    ["C",null,"Pod nuevo, vista vacía y grupo de consumo nuevo.",0],
+    ["K","C","Rebobina cada partición asignada a OFFSET_BEGINNING.",0],
+    ["K","C","Lee la foto más reciente por clave (la compactación retiró las antiguas).",0],
+    [null,null,`Vista completa (5 zonas, 5 tarifas) en ${DATA.kpis.replay} s, sin pedirle datos a ninguna API.`,0]]},
+};
+let flowKey="tobe", flowIdx=-1, playing=null;
+function drawFlow(){
+  const svg=document.getElementById("flowSvg"); svg.innerHTML=""; arrow(svg);
+  const f=FLOWS[flowKey]; const used=new Set(); f.steps.forEach(s=>{if(s[0])used.add(s[0]); if(s[1])used.add(s[1]);});
+  if (flowKey!=="asis"){ ["T","K","Z","C"].forEach(k=>used.add(k)); }
+  let calls=0;
+  for (const k of used){ const n=FN[k]; const g=box(svg,n.x,n.y,n.w,46,n.t,"",""); if (flowKey==="down"&&k==="T"&&flowIdx>=0) g.style.opacity=.35; }
+  f.steps.forEach((s,i)=>{ if(!s[0]||!s[1]||i>flowIdx) return; const A=FN[s[0]],B=FN[s[1]];
+    const ax=A.x+A.w/2, ay=A.y+23, bx=B.x+B.w/2, by=B.y+23;
+    const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ox=dx/L, oy=dy/L;
+    const sx=ax+ox*Math.min(A.w/2,60), sy=ay+oy*26, ex=bx-ox*Math.min(B.w/2,60), ey=by-oy*26;
+    line(svg,sx,sy,ex,ey,s[3]?"bad":"hot", s[3]?"REST":""); if (s[3]) calls++;
+    if (i===flowIdx){ const c=svgEl("circle",{r:6,class:"pkt"+(s[3]?" bad":"")},svg);
+      const an=svgEl("animateMotion",{dur:"0.9s",repeatCount:"1",fill:"freeze",path:`M${sx},${sy} L${ex},${ey}`},c); an.beginElement&&setTimeout(()=>an.beginElement(),10); } });
+  document.getElementById("callCount").textContent="Llamadas síncronas: "+calls;
+  document.getElementById("callCount").className="pill "+(calls?"bad":"ok");
+  document.getElementById("flowNote").textContent=f.note;
+  document.getElementById("flowSteps").innerHTML=f.steps.map((s,i)=>`<div class="step ${i<=flowIdx?"on":""}"><div class="n">${i+1}</div><div>${esc(s[2])}</div></div>`).join("");
+  document.getElementById("flowPrev").disabled=flowIdx<0; document.getElementById("flowNext").disabled=flowIdx>=f.steps.length-1;
+}
+document.getElementById("flowNext").onclick=()=>{ flowIdx=Math.min(flowIdx+1,FLOWS[flowKey].steps.length-1); drawFlow(); };
+document.getElementById("flowPrev").onclick=()=>{ flowIdx=Math.max(flowIdx-1,-1); drawFlow(); };
+document.getElementById("flowPlay").onclick=()=>{ clearInterval(playing); flowIdx=-1; drawFlow();
+  playing=setInterval(()=>{ if(flowIdx>=FLOWS[flowKey].steps.length-1){clearInterval(playing);return;} flowIdx++; drawFlow(); },1300); };
+seg("flowSeg", d=>{ clearInterval(playing); flowKey=d.f; flowIdx=-1; drawFlow(); }); drawFlow();
+
+/* ---------- contratos ---------- */
+function typeStr(t){ if (typeof t==="string") return t; if (Array.isArray(t)) return t.map(typeStr).join(" | ");
+  if (t.logicalType) return t.logicalType; if (t.type==="enum") return "enum{"+t.symbols.join(",")+"}"; if (t.type==="map") return "map<"+typeStr(t.values)+">";
+  if (t.type==="array") return "array<"+typeStr(t.items)+">"; return t.type; }
+function fieldsTable(fields, marks){ marks=marks||{};
+  return "<tr><th>Campo</th><th>Tipo</th><th>Default</th></tr>"+fields.map(f=>`<tr class="field-row ${marks[f.name]||""}"><td>${esc(f.name)}</td><td class="mono">${esc(typeStr(f.type))}</td><td>${"default" in f ? esc(JSON.stringify(f.default)) : '<span class="muted">—</span>'}</td></tr>`).join(""); }
+function showSchema(k){ const s = k==="zt" ? DATA.zt : DATA.zs;
+  document.getElementById("schemaTable").innerHTML = fieldsTable(s.fields);
+  document.getElementById("schemaRaw").textContent = JSON.stringify(s,null,2); }
+seg("schemaSeg", d=>showSchema(d.s)); showSchema("zt");
+const EVO = {
+  compat:{schema:DATA.v2c, ok:true, msg:`✅ Aceptado por FULL_TRANSITIVE. El Job registra la v2 (escenario 08: ${DATA.kpis.v2} s, en un stream desechable). Probado: un productor escribe con v2 y un lector con el contrato v1 lee el mismo mensaje sin el campo nuevo.`},
+  breaking:{schema:DATA.v2b, ok:false, msg:"❌ Rechazado. CI: «INCOMPATIBLE … [currency at /fields/6]». Si se salta el CI: 409 del registry, el claim no queda Ready y un productor con la configuración de la plataforma no puede serializar (40403). Un cambio así va a un tópico .v2 con doble publicación."},
+  nodefault:{schema:null, ok:false, msg:"❌ Rechazado. Un lector nuevo no sabría qué valor dar a los mensajes históricos del tópico compactado (spike: «add promoCode WITHOUT default» → 409)."},
+};
+function showEvo(k){ const base = DATA.zt.fields; let target, marks={};
+  if (k==="nodefault"){ target = base.concat([{name:"promoCode",type:"string"}]); }
+  else target = EVO[k].schema.fields;
+  const tn = new Set(target.map(f=>f.name)), bn = new Set(base.map(f=>f.name));
+  target.forEach(f=>{ if(!bn.has(f.name)) marks[f.name]="added"; });
+  const rows = target.concat(base.filter(f=>!tn.has(f.name)).map(f=>{ marks[f.name]="removed"; return f; }));
+  document.getElementById("evoTable").innerHTML = fieldsTable(rows, marks);
+  document.getElementById("evoResult").innerHTML = `<div class="result ${EVO[k].ok?"ok":"bad"}">${EVO[k].msg}</div>`; }
+seg("evoSeg", d=>showEvo(d.e)); showEvo("compat");
+function showSpike(k){ const rows = DATA.spike.filter(r => k==="all" || (k==="avro" ? r.m==="avro" : r.m!=="avro"));
+  const cell = v => `<span class="pill ${v==="ACEPTA"?"ok":"bad"}">${v}</span>`;
+  document.getElementById("spikeTable").innerHTML = "<tr><th>Modelo</th><th>Cambio</th><th>Apicurio 3.3.4</th><th>Karapace 6.2.4</th></tr>" +
+    rows.map(r=>`<tr><td class="mono">${esc(r.m)}</td><td>${esc(r.c)}</td><td>${cell(r.a)}</td><td>${cell(r.k)}</td></tr>`).join(""); }
+seg("spikeSeg", d=>showSpike(d.k)); showSpike("all");
+
+/* ---------- ADR ---------- */
+document.getElementById("adrList").innerHTML = DATA.adrs.map((a,i)=>`<details ${i===0?"open":""}><summary>${esc(a.title)}</summary><div class="body"><pre style="white-space:pre-wrap;max-height:none">${esc(a.body)}</pre></div></details>`).join("");
+
+/* ---------- evidencia ---------- */
+const K = DATA.kpis;
+document.getElementById("evKpis").innerHTML = [
+  ["Propagación (con sondeo)", K.prop+" ms","escenario 02 · cota superior"],["Entrega p50 / p99", K.p50+" / "+K.p99+" ms",K.n+" cambios, objetivo < 5 000"],
+  ["Relectura completa", K.replay+" s","escenario 04"],["Claim Ready", K.lead+" s","escenario 11 · mediana "+K.leadmed+" s"],
+].map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="d muted">${k[2]}</div></div>`).join("");
+const BA = [["Tiempo hasta un stream gobernado","sin camino gobernado (manual, sin esquema)",100,K.lead+" s",4],["Llamadas síncronas por cambio","≥ 4",100,"0",0.5],["Retraso artificial por cambio","5 000 ms (sleep)",100,K.p99+" ms (p99)",K.p99/5000*100],["Esquemas registrados (dominio piloto)","0",1,"2 · FULL_TRANSITIVE",100]];
+document.getElementById("beforeAfter").innerHTML = BA.map(b=>`<div class="bar"><span><b>${b[0]}</b><br><span class="muted">antes: ${b[1]}</span></span><div class="track"><div class="fill alt" style="width:${b[2]}%"></div></div><span class="muted">antes</span></div><div class="bar"><span></span><div class="track"><div class="fill" style="width:${Math.max(b[4],1.5)}%"></div></div><span><b>${b[3]}</b></span></div>`).join("");
+const evTabs = document.getElementById("evTabs");
+evTabs.innerHTML = DATA.evidence.map((e,i)=>`<button class="btn" data-i="${i}" aria-pressed="${i===0}">${esc(e.name)}</button>`).join("");
+function showEv(i){ evTabs.querySelectorAll("button").forEach(b=>{ b.setAttribute("aria-pressed", b.dataset.i==i); b.classList.toggle("primary", b.dataset.i==i); });
+  document.getElementById("evOut").textContent = DATA.evidence[i].text; }
+evTabs.querySelectorAll("button").forEach(b=>b.onclick=()=>showEv(+b.dataset.i)); showEv(0);
+
+/* ---------- rúbrica ---------- */
+const RUB = DATA.rubric;
+let checked = {}; try { checked = JSON.parse(store.get("pg-rubric")||"{}"); } catch(e){}
+function renderRub(){
+  let total=0, done=0;
+  document.getElementById("rubList").innerHTML = RUB.map((c,ci)=>`<h2>${esc(c.crit)} <span class="pill ${c.mine?"acc":""}">${c.mine?"Daniel":"aporte"}</span></h2><div class="card">${c.items.map((it,ii)=>{ const id=ci+"-"+ii; total++; if(checked[id]) done++;
+      return `<label class="check"><input type="checkbox" data-id="${id}" ${checked[id]?"checked":""}><div><b>${esc(it[0])}</b><div class="muted">${esc(it[1])}</div></div></label>`; }).join("")}</div>`).join("");
+  document.getElementById("rubProgress").style.width = (done/total*100)+"%";
+  document.getElementById("rubProgressLabel").textContent = `${done} de ${total} evidencias revisadas`;
+  document.querySelectorAll("#rubList input").forEach(inp=>inp.onchange=()=>{ checked[inp.dataset.id]=inp.checked; store.set("pg-rubric",JSON.stringify(checked)); renderRub(); });
+}
+renderRub();
+</script>
+</body>
+</html>

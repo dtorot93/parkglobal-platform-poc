@@ -1,0 +1,29 @@
+# Segundo stream del piloto (opción A+): la jerarquía Ciudad -> Zona -> Tarifa se modela por referencia.
+# Zonas es el único escritor de topology.state.zone.v1; cityId enlaza la zona con su ciudad.
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim
+metadata:
+  name: zone-state
+  namespace: team-zonas
+spec:
+  owner:
+    team: zonas
+    costCenter: CC-TOP-01
+  domain: topology
+  entity: zone
+  type: state
+  majorVersion: 1
+  key:
+    format: "<countryCode>:<zoneNo>"
+    pattern: "^[A-Z]{2}:[0-9]+$"
+  profile: small
+  environment: dev
+  contract:
+    format: avro
+    version: 1
+  governance:
+    pii: false
+    sloP99Seconds: 5
+    description: Estado público de cada zona de parqueo, con referencia a su ciudad (cityId).
+  consumers:
+    - team: consumidor-c

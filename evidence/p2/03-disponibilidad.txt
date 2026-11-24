@@ -1,0 +1,91 @@
+# 03 · Disponibilidad con el productor caído · 2026-11-23T23:04:15Z
+# kubectl scale deploy/tarifas --replicas=0 y consultas a los consumidores
+
+NAME      READY   UP-TO-DATE   AVAILABLE   AGE
+tarifas   0/0     0            0           47h
+No resources found in team-tarifas namespace.
+
+## Zonas (sin Tarifas, sin Core, sin caché)
+{
+  "zone": {
+    "zoneKey": "SE:4022",
+    "countryCode": "SE",
+    "zoneNo": 4022,
+    "version": 1,
+    "name": "Södermalm Sur",
+    "cityId": "SE-STO",
+    "cityName": "Stockholm",
+    "status": "ACTIVE",
+    "timezone": "Europe/Stockholm",
+    "updatedAt": 1795305230539
+  },
+  "tariff": {
+    "zoneKey": "SE:4022",
+    "countryCode": "SE",
+    "zoneNo": 4022,
+    "version": 51,
+    "status": "ACTIVE",
+    "timezone": "Europe/Stockholm",
+    "currency": "SEK",
+    "validFrom": "2026-11-21T23:53:50.421000+00:00",
+    "validTo": null,
+    "parkingTypesByChannel": {
+      "APP": [
+        "STREET"
+      ],
+      "ANPR": [
+        "GATED"
+      ]
+    },
+    "parkingFree": true,
+    "maxDailyPriceMinor": 10196,
+    "updatedAt": "2026-11-23T23:04:05.936000+00:00"
+  }
+}
+
+## Consumidor C decide tipo de carga y comisión
+{
+  "cityId": "SE-STO",
+  "cityName": "Stockholm",
+  "zones": [
+    {
+      "zoneKey": "SE:4021",
+      "name": "Södermalm Norte",
+      "status": "ACTIVE",
+      "zoneVersion": 1,
+      "tariff": {
+        "version": 88,
+        "currency": "SEK",
+        "parkingFree": false,
+        "maxDailyPriceMinor": 10195,
+        "status": "ACTIVE"
+      },
+      "decision": {
+        "chargeType": "APARCAMIENTO_MAS_CARGA",
+        "commissionTier": "ALTA"
+      }
+    },
+    {
+      "zoneKey": "SE:4022",
+      "name": "Södermalm Sur",
+      "status": "ACTIVE",
+      "zoneVersion": 1,
+      "tariff": {
+        "version": 51,
+        "currency": "SEK",
+        "parkingFree": true,
+        "maxDailyPriceMinor": 10196,
+        "status": "ACTIVE"
+      },
+      "decision": {
+        "chargeType": "SOLO_CARGA",
+        "commissionTier": "ALTA"
+      }
+    }
+  ]
+}
+
+## Comprobaciones
+  ✔ Tarifas no tiene réplicas listas
+  ✔ Zonas responde la tarifa vigente de SE:4022 (10196)
+  ✔ El Consumidor C decide para las 2 zonas de Stockholm

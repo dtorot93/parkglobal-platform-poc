@@ -1,0 +1,30 @@
+apiVersion: platform.parkglobal.io/v1alpha1
+kind: EventStreamClaim
+metadata:
+  name: ${{ values.name }}
+  namespace: team-${{ values.team }}
+spec:
+  owner:
+    team: ${{ values.team }}
+    costCenter: ${{ values.costCenter }}
+  domain: ${{ values.domain }}
+  entity: ${{ values.entity }}
+  type: state
+  majorVersion: 1
+  key:
+    format: "${{ values.keyFormat }}"
+    pattern: "${{ values.keyPattern }}"
+  profile: small
+  environment: ${{ values.environment }}
+  contract:
+    format: avro
+    version: 1
+  governance:
+    pii: ${{ values.pii }}
+    sloP99Seconds: ${{ values.sloP99Seconds }}
+    description: ${{ values.description }}
+  consumers:
+{%- for c in values.consumers %}
+    - team: ${{ c | parseEntityRef | pick('name') | replace('team-', '') }}
+{%- else %} []
+{%- endfor %}

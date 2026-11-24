@@ -1,0 +1,20 @@
+{
+  "type": "record",
+  "name": "ZoneTariffState",
+  "namespace": "io.parkglobal.pricing.state",
+  "doc": "FIXTURE DE PRUEBA · v2 incompatible: elimina el campo requerido currency (caso de la diapositiva 6). Debe ser rechazado por FULL_TRANSITIVE (CI rojo y 409 en el registry).",
+  "fields": [
+    { "name": "zoneKey", "type": "string" },
+    { "name": "countryCode", "type": "string" },
+    { "name": "zoneNo", "type": "int" },
+    { "name": "version", "type": "long" },
+    { "name": "status", "type": { "type": "enum", "name": "TariffStatus", "symbols": ["ACTIVE", "SUSPENDED", "UNKNOWN"], "default": "UNKNOWN" } },
+    { "name": "timezone", "type": "string" },
+    { "name": "validFrom", "type": { "type": "long", "logicalType": "timestamp-millis" } },
+    { "name": "validTo", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null },
+    { "name": "parkingTypesByChannel", "type": { "type": "map", "values": { "type": "array", "items": { "type": "enum", "name": "ParkingType", "symbols": ["STREET", "GATED", "CHARGING", "UNKNOWN"], "default": "UNKNOWN" } } } },
+    { "name": "parkingFree", "type": "boolean" },
+    { "name": "maxDailyPriceMinor", "type": ["null", "long"], "default": null },
+    { "name": "updatedAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+  ]
+}

@@ -1,0 +1,30 @@
+# Spike de compatibilidad · 2026-11-21T23:29:02Z · Apicurio Registry 3.3.4 y Karapace 6.2.4 · política FULL_TRANSITIVE
+# Reproducir: scripts/contracts/spike_compat.py (ver docs/adr/ADR-005)
+
+### apicurio
+closed           | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+closed           | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+open             | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+open             | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+partial-pattern  | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+partial-pattern  | add optional ext_promoCode (string|null)   | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+partial-pattern  | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+partial-addl     | add optional promoCode (string|null)       | cfg=200 v1=200 -> ACEPTA        
+partial-addl     | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+avro             | add optional promoCode with default        | cfg=200 v1=200 -> ACEPTA        
+avro             | add promoCode WITHOUT default              | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+avro             | remove required currency (no default)      | cfg=200 v1=200 -> RECHAZA(409)  {"message":"io.apicurio.registry.rules.violation.RuleViolationException: Incompatible arti
+
+### karapace
+closed           | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+closed           | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+open             | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+open             | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+partial-pattern  | add optional promoCode (string|null)       | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+partial-pattern  | add optional ext_promoCode (string|null)   | cfg=200 v1=200 -> ACEPTA        
+partial-pattern  | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+partial-addl     | add optional promoCode (string|null)       | cfg=200 v1=200 -> ACEPTA        
+partial-addl     | remove required currency                   | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+avro             | add optional promoCode with default        | cfg=200 v1=200 -> ACEPTA        
+avro             | add promoCode WITHOUT default              | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco
+avro             | remove required currency (no default)      | cfg=200 v1=200 -> RECHAZA(409)  {"error_code":409,"message":"Incompatible schema, compatibility_mode=FULL_TRANSITIVE. Inco

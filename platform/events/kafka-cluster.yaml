@@ -1,0 +1,51 @@
+# Clúster Kafka local de la PoC (Strimzi, KRaft, 1 nodo). En ParkGlobal: Amazon MSK, un clúster por región.
+# auto.create.topics.enable=false: los tópicos solo nacen por el Golden Path (EventStreamClaim), nunca por un productor.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: dual-role
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: events
+spec:
+  replicas: 1
+  roles: [controller, broker]
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 5Gi
+        kraftMetadata: shared
+        deleteClaim: false
+  resources:
+    requests: { cpu: 250m, memory: 1Gi }
+    limits: { memory: 1536Mi }
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: events
+  namespace: kafka
+spec:
+  kafka:
+    version: 4.3.1
+    metadataVersion: 4.3-IV0
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+    config:
+      auto.create.topics.enable: false
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+      log.cleaner.backoff.ms: 15000
+  entityOperator:
+    topicOperator:
+      resources:
+        requests: { cpu: 50m, memory: 256Mi }
+        limits: { memory: 512Mi }

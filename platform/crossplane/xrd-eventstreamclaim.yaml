@@ -1,0 +1,113 @@
+# Platform API (contrato) del Golden Path «Publicar stream de estado (ECST)» · Proyecto 2, Sección IV.
+# Mismo patrón que DatabaseClaim (P1) y APIClaim (III.2): el equipo declara QUÉ publica; la plataforma decide CÓMO
+# (nombre del tópico, compactación, particiones, subject, política de compatibilidad, configuración de cliente).
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: eventstreamclaims.platform.parkglobal.io
+spec:
+  group: platform.parkglobal.io
+  names:
+    kind: EventStreamClaim
+    plural: eventstreamclaims
+    shortNames: [esc]
+    categories: [parkglobal]
+  scope: Namespaced
+  defaultCompositionRef:
+    name: eventstream-strimzi-apicurio
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - { name: TOPIC, type: string, jsonPath: .status.topic }
+        - { name: CONTRACT, type: string, jsonPath: .status.contractVersion }
+        - { name: COMPAT, type: string, jsonPath: .status.compatibility }
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [owner, domain, entity, key, environment, contract, governance]
+              properties:
+                owner:
+                  type: object
+                  description: Equipo dueño (único escritor del stream) y centro de costo.
+                  required: [team, costCenter]
+                  properties:
+                    team: { type: string, description: "Equipo sin prefijo (p. ej. tarifas)." }
+                    costCenter: { type: string, pattern: '^CC-[A-Z]{2,5}-[0-9]{2}$' }
+                domain:
+                  type: string
+                  description: Dominio de negocio dueño del dato (pricing, topology...). Kyverno verifica que pertenezca al equipo.
+                  pattern: '^[a-z][a-z0-9-]{1,30}$'
+                entity:
+                  type: string
+                  description: Entidad cuyo estado se publica, en kebab-case (zone-tariff, zone). Un tópico por entidad.
+                  pattern: '^[a-z][a-z0-9-]{1,40}$'
+                type:
+                  type: string
+                  description: Tipo de stream. La TVP solo ofrece streams de estado (ECST); delta, notificación y comando quedan fuera (regla 80/20).
+                  enum: [state]
+                  default: state
+                majorVersion:
+                  type: integer
+                  description: Versión mayor del tópico. Un cambio incompatible crea un tópico .v<N+1> con doble publicación.
+                  minimum: 1
+                  default: 1
+                key:
+                  type: object
+                  description: Clave del mensaje (string sin esquema, estable para compactación y orden por entidad).
+                  required: [format, pattern]
+                  properties:
+                    format: { type: string, description: "Formato legible, p. ej. <countryCode>:<zoneNo>." }
+                    pattern: { type: string, description: "Expresión regular que deben cumplir las claves." }
+                profile:
+                  type: string
+                  description: "Perfil semántico: small = 3 particiones · standard = 6 particiones. Fijo tras la creación (cambiarlo rompe el orden por clave)."
+                  enum: [small, standard]
+                  default: small
+                environment:
+                  type: string
+                  enum: [dev, staging]
+                contract:
+                  type: object
+                  required: [version]
+                  properties:
+                    format:
+                      type: string
+                      description: Formato del contrato. Avro por evidencia del spike de compatibilidad (ADR-005).
+                      enum: [avro]
+                      default: avro
+                    version:
+                      type: integer
+                      description: Última versión del contrato (schemas/v1.avsc ... vN.avsc). La plataforma registra todas, en orden.
+                      minimum: 1
+                governance:
+                  type: object
+                  required: [pii]
+                  properties:
+                    pii: { type: boolean, description: "¿Contiene datos personales? La TVP no admite PII (fase 2: tokenización)." }
+                    sloP99Seconds: { type: integer, default: 5, description: "SLO de entrega extremo a extremo (p99, segundos)." }
+                    description: { type: string }
+                consumers:
+                  type: array
+                  description: Equipos consumidores. Reciben la configuración de cliente en su namespace y quedan en el catálogo (análisis de impacto).
+                  items:
+                    type: object
+                    required: [team]
+                    properties:
+                      team: { type: string }
+            status:
+              type: object
+              properties:
+                topic: { type: string }
+                subject: { type: string }
+                compatibility: { type: string }
+                contractVersion: { type: string }
+                registryUrl: { type: string }
+                bootstrapServers: { type: string }
+                clientConfig: { type: string }
+                topicReady: { type: boolean }
+                contractRegistered: { type: boolean }
