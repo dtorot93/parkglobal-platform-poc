@@ -1,0 +1,25 @@
+# GENERADO por scripts/contracts/render_catalog.py. Entidad API (AsyncAPI) del catálogo de streams.
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: pricing-state-parking-rule-v1
+  title: ParkingRuleState (pricing.state.parking-rule.v1)
+  description: Reglas de estacionamiento por zona (franja horaria y tiempo máximo).
+  annotations:
+    parkglobal.io/topic: pricing.state.parking-rule.v1
+    parkglobal.io/schema-subject: pricing.state.parking-rule.v1-value
+    parkglobal.io/compatibility: FULL_TRANSITIVE
+    parkglobal.io/contract-version: "1"
+    parkglobal.io/pii: "false"
+    parkglobal.io/slo-p99-seconds: "5"
+    parkglobal.io/cost-center: CC-PRC-01
+    parkglobal.io/consumers: "team-zonas"
+    backstage.io/kubernetes-namespace: team-tarifas
+  tags: [ecst, kafka, avro, pricing, golden-path]
+spec:
+  type: asyncapi
+  lifecycle: experimental
+  owner: group:team-tarifas
+  system: pricing
+  definition:
+    $text: ./asyncapi.yaml
