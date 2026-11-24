@@ -1,0 +1,25 @@
+# GENERADO por scripts/contracts/render_catalog.py. Entidad API (AsyncAPI) del catálogo de streams.
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: topology-state-city-v1
+  title: CityState (topology.state.city.v1)
+  description: Estado público de cada ciudad (nombre y zona horaria), raíz de la jerarquía Ciudad -> Zonas -> Tarifa.
+  annotations:
+    parkglobal.io/topic: topology.state.city.v1
+    parkglobal.io/schema-subject: topology.state.city.v1-value
+    parkglobal.io/compatibility: FULL_TRANSITIVE
+    parkglobal.io/contract-version: "1"
+    parkglobal.io/pii: "false"
+    parkglobal.io/slo-p99-seconds: "5"
+    parkglobal.io/cost-center: CC-TOP-01
+    parkglobal.io/consumers: "team-consumidor-c"
+    backstage.io/kubernetes-namespace: team-zonas
+  tags: [ecst, kafka, avro, topology, golden-path]
+spec:
+  type: asyncapi
+  lifecycle: experimental
+  owner: group:team-zonas
+  system: topology
+  definition:
+    $text: ./asyncapi.yaml
