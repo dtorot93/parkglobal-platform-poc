@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "CityState",
+  "namespace": "io.parkglobal.topology.state",
+  "doc": "ECST · Foto completa del estado público de una ciudad (raíz de la jerarquía Ciudad -> Zonas -> Tarifa).",
+  "fields": [
+    { "name": "cityId", "type": "string", "doc": "Igual a la clave del mensaje: <countryCode>-<cityCode>." },
+    { "name": "countryCode", "type": "string" },
+    { "name": "name", "type": "string" },
+    { "name": "timezone", "type": "string" },
+    { "name": "version", "type": "long", "doc": "Versión monotónica por clave." },
+    { "name": "updatedAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+  ]
+}

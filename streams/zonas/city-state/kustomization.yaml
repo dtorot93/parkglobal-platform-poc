@@ -1,0 +1,8 @@
+resources:
+  - eventstreamclaim.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+configMapGenerator:
+  - name: city-state-contract
+    files:
+      - v1.avsc=schemas/v1.avsc

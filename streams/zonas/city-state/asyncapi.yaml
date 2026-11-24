@@ -1,0 +1,92 @@
+# GENERADO por scripts/contracts/render_catalog.py a partir del claim y de schemas/v1.avsc. No editar a mano.
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "CityState",
+    "version": "1.1.0",
+    "description": "Estado público de cada ciudad (nombre y zona horaria), raíz de la jerarquía Ciudad -> Zonas -> Tarifa.",
+    "x-parkglobal": {
+      "owner": "team-zonas",
+      "pattern": "ECST (event-carried state transfer)",
+      "subject": "topology.state.city.v1-value",
+      "compatibility": "FULL_TRANSITIVE",
+      "pii": false,
+      "sloP99Seconds": 5,
+      "retention": "compactada por clave; tombstone = baja"
+    }
+  },
+  "servers": {
+    "local": {
+      "host": "events-kafka-bootstrap.kafka.svc:9092",
+      "protocol": "kafka"
+    }
+  },
+  "channels": {
+    "topology.state.city.v1": {
+      "address": "topology.state.city.v1",
+      "messages": {
+        "CityState": {
+          "name": "CityState",
+          "contentType": "application/vnd.apache.avro+binary",
+          "bindings": {
+            "kafka": {
+              "key": {
+                "type": "string",
+                "description": "<countryCode>-<cityCode>"
+              }
+            }
+          },
+          "payload": {
+            "schemaFormat": "application/vnd.apache.avro;version=1.9.0",
+            "schema": {
+              "type": "record",
+              "name": "CityState",
+              "namespace": "io.parkglobal.topology.state",
+              "doc": "ECST · Foto completa del estado público de una ciudad (raíz de la jerarquía Ciudad -> Zonas -> Tarifa).",
+              "fields": [
+                {
+                  "name": "cityId",
+                  "type": "string",
+                  "doc": "Igual a la clave del mensaje: <countryCode>-<cityCode>."
+                },
+                {
+                  "name": "countryCode",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "timezone",
+                  "type": "string"
+                },
+                {
+                  "name": "version",
+                  "type": "long",
+                  "doc": "Versión monotónica por clave."
+                },
+                {
+                  "name": "updatedAt",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "publishCityState": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/topology.state.city.v1"
+      },
+      "summary": "team-zonas publica la foto completa del estado (único escritor)."
+    }
+  }
+}
