@@ -1,0 +1,93 @@
+# GENERADO por scripts/contracts/render_catalog.py a partir del claim y de schemas/v1.avsc. No editar a mano.
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "ParkingRuleState",
+    "version": "1.1.0",
+    "description": "Reglas de estacionamiento por zona (franja horaria y tiempo máximo).",
+    "x-parkglobal": {
+      "owner": "team-tarifas",
+      "pattern": "ECST (event-carried state transfer)",
+      "subject": "pricing.state.parking-rule.v1-value",
+      "compatibility": "FULL_TRANSITIVE",
+      "pii": false,
+      "sloP99Seconds": 5,
+      "retention": "compactada por clave; tombstone = baja"
+    }
+  },
+  "servers": {
+    "local": {
+      "host": "events-kafka-bootstrap.kafka.svc:9092",
+      "protocol": "kafka"
+    }
+  },
+  "channels": {
+    "pricing.state.parking-rule.v1": {
+      "address": "pricing.state.parking-rule.v1",
+      "messages": {
+        "ParkingRuleState": {
+          "name": "ParkingRuleState",
+          "contentType": "application/vnd.apache.avro+binary",
+          "bindings": {
+            "kafka": {
+              "key": {
+                "type": "string",
+                "description": "<countryCode>:<ruleNo>"
+              }
+            }
+          },
+          "payload": {
+            "schemaFormat": "application/vnd.apache.avro;version=1.9.0",
+            "schema": {
+              "type": "record",
+              "name": "ParkingRuleState",
+              "namespace": "io.parkglobal.pricing.state",
+              "doc": "ECST · Foto completa de una regla de estacionamiento de una zona (franja horaria y tiempo máximo).",
+              "fields": [
+                {
+                  "name": "ruleKey",
+                  "type": "string",
+                  "doc": "Igual a la clave del mensaje: <countryCode>:<ruleNo>."
+                },
+                {
+                  "name": "zoneKey",
+                  "type": "string",
+                  "doc": "Referencia a la zona (<countryCode>:<zoneNo>)."
+                },
+                {
+                  "name": "version",
+                  "type": "long",
+                  "doc": "Versión monotónica por clave."
+                },
+                {
+                  "name": "maxStayMinutes",
+                  "type": [
+                    "null",
+                    "int"
+                  ],
+                  "default": null
+                },
+                {
+                  "name": "updatedAt",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "operations": {
+    "publishParkingRuleState": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/pricing.state.parking-rule.v1"
+      },
+      "summary": "team-tarifas publica la foto completa del estado (único escritor)."
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ParkingRuleState",
+  "namespace": "io.parkglobal.pricing.state",
+  "doc": "ECST · Foto completa de una regla de estacionamiento de una zona (franja horaria y tiempo máximo).",
+  "fields": [
+    { "name": "ruleKey", "type": "string", "doc": "Igual a la clave del mensaje: <countryCode>:<ruleNo>." },
+    { "name": "zoneKey", "type": "string", "doc": "Referencia a la zona (<countryCode>:<zoneNo>)." },
+    { "name": "version", "type": "long", "doc": "Versión monotónica por clave." },
+    { "name": "maxStayMinutes", "type": ["null", "int"], "default": null },
+    { "name": "updatedAt", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+  ]
+}
