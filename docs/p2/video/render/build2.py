@@ -9,7 +9,11 @@ Fuentes de grabación: ../rec/out/raw.mkv (A, director.sh) y ../rec/out/raw-b.mk
 import json
 import pathlib
 
-from build import CARD, GAP, INTRO, LEAD, OUTRO, VOZ, duration
+from build import LEAD, VOZ, duration
+
+# Versión de 4 minutos: sin contexto animado (va en las diapositivas), ritmo más ágil y voz al 104 %.
+INTRO, GAP, CARD, OUTRO, TEMPO = 0.4, 0.35, 1.5, 2.0, 1.04
+TRIM = {"20": 1.9}   # se omite «Así se ve en la realidad.»: ahora el video abre con este segmento
 
 HERE = pathlib.Path(__file__).resolve().parent
 OUT = HERE / "build2"
@@ -17,30 +21,27 @@ FULL = [0, 0, 2560, 1392]                       # monitor sin la barra de tareas
 EMAIL = [[690, 402, 276, 48], [1392, 402, 440, 48]]   # correo del autor del commit en la cabecera de Argo CD (se difumina)
 TERM = "Terminal · clúster local (kind)"
 
-CARDS = {1: "Qué se hizo", 2: "Así funciona · grabación real", 3: "En operación · demo en vivo", 4: "En resumen"}
+CARDS = {1: "Así funciona · grabación real", 2: "En operación · demo en vivo", 3: "En resumen"}
 # (audio, parte, tipo, etiqueta, cortes) · corte = (fuente, desde, hasta, velocidad, recorte, difuminar)
 SEQ = [
-    ("01", 1, "anim", None, None), ("02", 1, "anim", None, None), ("03", 1, "anim", None, None), ("04", 1, "anim", None, None),
-    ("20", 2, "footage", "Terminal · el equipo Zonas declara su stream (streams/zonas/city-state)",
+    ("20", 1, "footage", "Terminal · el equipo Zonas declara su stream (streams/zonas/city-state)",
      [("A", 6.6, 13.4, 1, FULL, None)]),
-    ("21", 2, "footage", "Terminal y GitHub · el equipo hace push y abre el pull request #7",
+    ("21", 1, "footage", "Terminal y GitHub · el equipo hace push y abre el pull request #7",
      [("A", 339.5, 342.0, 1, [0, 355, 2560, 1037], None), ("A", 359.0, 372.0, 1, FULL, None)]),
-    ("22", 2, "footage", "GitHub Actions · la validación del PR #7 corre sola",
+    ("22", 1, "footage", "GitHub Actions · la validación del PR #7 corre sola",
      [("A", 384.0, 392.0, 1, FULL, None), ("A", 400.0, 413.0, 1, FULL, None)]),
-    ("23", 2, "footage", "GitHub · el PR #7 lo integra github-actions[bot]", [("A", 419.0, 431.0, 1, FULL, None)]),
-    ("24", 2, "footage", "Argo CD · la espera real (~2 min) se muestra acelerada ×10; después, el árbol del stream",
+    ("23", 1, "footage", "GitHub · el PR #7 lo integra github-actions[bot]", [("A", 419.0, 431.0, 1, FULL, None)]),
+    ("24", 1, "footage", "Argo CD · la espera real (~2 min) se muestra acelerada ×10; después, el árbol del stream",
      [("A", 431.0, 531.0, 10, FULL, None), ("A", 531.0, 535.4, 1, FULL, None), ("A", 535.4, 548.0, 1, FULL, EMAIL)]),
-    ("25", 2, "footage", "Terminal · lo que quedó en el clúster",
+    ("25", 1, "footage", "Terminal · lo que quedó en el clúster",
      [("B", 8.0, 24.0, 1, FULL, None), ("A", 586.5, 592.0, 1, [0, 880, 2560, 512], None)]),
-    ("26", 2, "footage", "Apicurio Registry · el contrato topology.state.city.v1", [("A", 594.0, 612.0, 1, FULL, None)]),
-    ("08", 2, "anim", None, None),
-    ("10", 3, "footage", TERM + " · demo.sh en vivo", [("B", 36.5, 44.0, 1, FULL, None)]),
-    ("12", 3, "footage", TERM + " · demo.sh en vivo", [("B", 61.8, 71.3, 1, FULL, None)]),
-    ("13", 3, "footage", TERM + " · demo.sh en vivo", [("B", 71.3, 84.8, 1, FULL, None)]),
-    ("14", 3, "footage", TERM + " · demo.sh en vivo", [("B", 84.8, 94.3, 1, FULL, None)]),
-    ("15", 3, "footage", TERM + " · demo.sh en vivo", [("B", 94.3, 104.3, 1, FULL, None)]),
-    ("16", 3, "footage", TERM + " · demo.sh en vivo", [("B", 104.3, 123.4, 1, FULL, None)]),
-    ("17", 4, "anim", None, None), ("18", 4, "anim", None, None),
+    ("26", 1, "footage", "Apicurio Registry · el contrato topology.state.city.v1", [("A", 594.0, 612.0, 1, FULL, None)]),
+    ("12", 2, "footage", TERM + " · demo.sh en vivo", [("B", 61.8, 71.3, 1, FULL, None)]),
+    ("13", 2, "footage", TERM + " · demo.sh en vivo", [("B", 71.3, 84.8, 1, FULL, None)]),
+    ("14", 2, "footage", TERM + " · demo.sh en vivo", [("B", 84.8, 94.3, 1, FULL, None)]),
+    ("15", 2, "footage", TERM + " · demo.sh en vivo", [("B", 94.3, 104.3, 1, FULL, None)]),
+    ("16", 2, "footage", TERM + " · demo.sh en vivo", [("B", 104.3, 123.4, 1, FULL, None)]),
+    ("17", 3, "anim", None, None), ("18", 3, "anim", None, None),
 ]
 
 
@@ -51,8 +52,10 @@ def main():
             part = p
             cards.append({"part": p, "title": CARDS[p], "start": round(t, 3), "dur": CARD})
             t += CARD
-        d = duration(VOZ / f"{sid}.mp3")
-        segs.append({"id": sid, "part": p, "kind": kind, "label": label, "start": round(t, 3), "dur": round(d, 3), "file": f"{sid}.mp3"})
+        trim = TRIM.get(sid, 0.0)
+        d = (duration(VOZ / f"{sid}.mp3") - trim) / TEMPO
+        segs.append({"id": sid, "part": p, "kind": kind, "label": label, "start": round(t, 3), "dur": round(d, 3), "file": f"{sid}.mp3",
+                     "trim": trim, "tempo": TEMPO})
         t += d + GAP
     total = round(t - GAP + OUTRO, 3)
     # Ventana visible de cada tramo grabado: desde (inicio - LEAD) hasta el siguiente bloque.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Video v2 (grabación real): ./make_final.sh            -> ../video-p2-real.mp4
+# Video v2 (grabación real, 4 min): ./make_final.sh     -> ../video-p2-4min.mp4
 #                            ./make_final.sh clip 24    -> solo el tramo grabado 24 en build2/clips/ (para revisar)
 #                            ./make_final.sh stills T1,T2  -> capturas de la animación/marcos en build2/stills
 set -euo pipefail
@@ -73,12 +73,13 @@ mapfile -t ARGS < "$WT/compose.args"
 "$FF" -y -hide_banner -loglevel error "${ARGS[@]}" -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -r 30 "$(win "$WT/video.mp4")"
 # 4) Audio en su instante exacto, normalizado a -16 LUFS
 args=(); filt=""; i=0; total=$(python3 -c "import json;print(json.load(open('build2/timeline.json'))['total'])")
-while read -r file start; do
-  args+=(-i "$(win "$PWD/../voz/$file")"); filt+="[$i:a]aresample=48000,adelay=$(python3 -c "print(int($start*1000))"):all=1[a$i];"; i=$((i+1))
-done < <(python3 -c "import json;[print(s['file'],s['start']) for s in json.load(open('build2/timeline.json'))['segs']]")
+while read -r file start trim tempo; do
+  args+=(-i "$(win "$PWD/../voz/$file")")
+  filt+="[$i:a]atrim=start=$trim,asetpts=PTS-STARTPTS,atempo=$tempo,aresample=48000,adelay=$(python3 -c "print(int($start*1000))"):all=1[a$i];"; i=$((i+1))
+done < <(python3 -c "import json;[print(s['file'],s['start'],s.get('trim',0),s.get('tempo',1)) for s in json.load(open('build2/timeline.json'))['segs']]")
 for j in $(seq 0 $((i-1))); do filt+="[a$j]"; done
 filt+="amix=inputs=$i:normalize=0,apad,atrim=0:$total,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[aout]"
 "$FF" -y -hide_banner -loglevel error "${args[@]}" -filter_complex "$filt" -map "[aout]" -c:a aac -b:a 192k "$(win "$WT/audio.m4a")"
-"$FF" -y -hide_banner -loglevel error -i "$(win "$WT/video.mp4")" -i "$(win "$WT/audio.m4a")" -map 0:v -map 1:a -c copy -movflags +faststart -t "$total" "$(win "$PWD/../video-p2-real.mp4")"
+"$FF" -y -hide_banner -loglevel error -i "$(win "$WT/video.mp4")" -i "$(win "$WT/audio.m4a")" -map 0:v -map 1:a -c copy -movflags +faststart -t "$total" "$(win "$PWD/../video-p2-4min.mp4")"
 rm -rf "$WT"
-echo "listo: $(cd .. && pwd)/video-p2-real.mp4"
+echo "listo: $(cd .. && pwd)/video-p2-4min.mp4"
